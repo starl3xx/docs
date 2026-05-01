@@ -1,133 +1,117 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
-icon: 'star'
+title: "filter.fun"
+description: "Get filtered or get funded ▼"
 ---
 
-## Setting up
+<Visibility for="humans">
 
-Get your documentation site up and running in minutes.
+# Get filtered or get funded ▼
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+> One of the problems with most token launchpads is that the vast
+> majority of tokens launched die or never take off at all. With
+> filter.fun, that's a feature, not a bug. **We've solved launchpads.**
 
-## Make it yours
+filter.fun is a weekly token-launch tournament on Base. Twelve tokens
+enter, six survive the cut, one is funded. Filtered tokens don't disappear —
+their liquidity rolls into the winner, and their holders are made whole
+through rollover and hold bonuses.
 
-Design a docs site that looks great and empowers your users.
+## How a week works
 
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<Steps>
+  <Step title="Launch & Trade">
+    Tokens are launched and traded all week. Every trade adds to a shared pool.
+  </Step>
+  <Step title="Tokens Get Filtered ▼">
+    As the week progresses, weaker tokens are eliminated. Their liquidity is
+    removed and added to the pool.
+  </Step>
+  <Step title="The Pool Grows">
+    All filtered tokens + trading fees build a growing reward pool. The more
+    tokens fail, the bigger the reward.
+  </Step>
+  <Step title="One Winner Emerges">
+    At the end of the week, one token wins. Filtered users are rolled into
+    the winner. Holders earn a bonus.
+  </Step>
+  <Step title="Winner Gets Funded">
+    The winner receives buy pressure from the pool, protocol-backed
+    liquidity, and full market attention.
+  </Step>
+</Steps>
+
+## Start here
+
+<CardGroup cols={3}>
+  <Card title="The filter" icon="filter" href="/how-it-works/the-filter">
+    The core mechanic. What it means to be filtered, and why filtered tokens
+    keep trading.
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Launch a token" icon="rocket" href="/creators/launch-a-token">
+    Twelve slots open every Monday. Dynamic launch cost, refundable stake,
+    one launch per wallet per week.
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Before you trade" icon="triangle-exclamation" href="/risks/risk-disclosure">
+    Most tokens get filtered. filter.fun does not promise returns. Read this
+    first.
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## Ask your AI
 
-Everything you need to create world-class documentation.
+<Prompt description="Ask AI to explain filter.fun">
+One of the problems with most token launchpads is that the vast majority
+of tokens launched die or never take off at all. With filter.fun, that's
+a feature, not a bug. We've solved launchpads.
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+Explain the filter.fun loop in plain English: how the weekly cadence
+works (Monday launch, Thursday cut, Sunday winner), what happens to
+filtered tokens, and how holders of filtered tokens are made whole through
+rollover and hold bonuses. Use the docs at filter.fun for current numbers.
+</Prompt>
 
-## Make your content agent ready
+</Visibility>
 
-Make your docs work for humans and AI agents alike.
+<Visibility for="agents">
 
-<Columns cols={2}>
-  <Card
-    title="Prompt component"
-    icon="robot"
-    href="/agent-ready/prompt"
-  >
-    Embed shareable AI prompts readers can copy or open in Cursor.
-  </Card>
-  <Card
-    title="Visibility"
-    icon="eye"
-    href="/agent-ready/visibility"
-  >
-    Show different content to humans and agents reading your docs.
-  </Card>
-  <Card
-    title="Contextual menu"
-    icon="bolt"
-    href="/agent-ready/contextual"
-  >
-    Give readers one-click access to Claude, ChatGPT, Cursor, and more.
-  </Card>
-  <Card
-    title="AI coding tools"
-    icon="wand-magic-sparkles"
-    href="/ai-tools/claude-code"
-  >
-    Set up Claude Code, Cursor, or Windsurf with Mintlify's skill.
-  </Card>
-</Columns>
+## filter.fun — structured facts
 
-## Need inspiration?
+- **Product:** weekly token-launch tournament
+- **Chain:** Base (mainnet) and Base Sepolia (testnet)
+- **AMM:** Uniswap V4 (native — own factory + hook + LP locker, not a clanker wrap)
+- **Tagline (locked):** "Get filtered or get funded ▼"
+- **Mark:** ▼ (U+25BC), not 🔻 (emoji)
+- **Spec source of truth:** https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md
+- **MCP server:** https://filterfun.mintlify.app/mcp
+- **Repo:** https://github.com/starl3xx/filter-fun
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+### Weekly loop (one season = 168 hours)
+
+| Hour | Phase |
+| ---: | --- |
+| 0–48 | Launch window (12 slots, FCFS, dynamic cost) |
+| 48–96 | Trading window (full field, no eliminations) |
+| 96 | Hard cut — 12 → 6 |
+| 96–168 | Finals |
+| 168 | Settlement (winner crowned, next season opens) |
+
+### Settlement split (losers pot, after 2.5% champion bounty)
+
+| Allocation | Share |
+| --- | ---: |
+| Rollover (filtered holders → winner) | 45% |
+| Hold bonus (14-day hold) | 25% |
+| Mechanics / events | 10% |
+| Protocol-owned liquidity (POL) | 10% |
+| Treasury | 10% |
+
+### Trading fee (200 bps)
+
+| Allocation | Bps |
+| --- | ---: |
+| Treasury | 65 |
+| Prize pool | 95 |
+| Mechanics | 25 |
+| Creator | 20 |
+
+</Visibility>

@@ -1,126 +1,103 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Mintlify Starter Kit",
+  "name": "filter.fun",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#ff3aa1",
+    "light": "#ff5fb8",
+    "dark": "#ff2d55"
+  },
+  "background": {
+    "color": {
+      "dark": "#0a0612",
+      "light": "#fef2ff"
+    }
   },
   "favicon": "/favicon.svg",
   "navigation": {
-    "tabs": [
+    "groups": [
       {
-        "tab": "Guides",
-        "groups": [
-          {
-            "group": "Getting started",
-            "pages": [
-              "index",
-              "quickstart",
-              "development"
-            ]
-          },
-          {
-            "group": "Customization",
-            "pages": [
-              "essentials/settings",
-              "essentials/navigation"
-            ]
-          },
-          {
-            "group": "Writing content",
-            "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/components",
-              "essentials/reusable-snippets"
-            ]
-          },
-          {
-            "group": "Agent ready",
-            "pages": [
-              "agent-ready/prompt",
-              "agent-ready/visibility",
-              "agent-ready/contextual",
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
-            ]
-          }
+        "group": "Get started",
+        "pages": [
+          "index",
+          "quickstart"
         ]
       },
       {
-        "tab": "API reference",
-        "groups": [
-          {
-            "group": "API documentation",
-            "pages": [
-              "api-reference/introduction"
-            ]
-          },
-          {
-            "group": "Endpoint examples",
-            "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
-            ]
-          }
+        "group": "How it works",
+        "pages": [
+          "how-it-works/the-filter",
+          "how-it-works/season-cadence",
+          "how-it-works/hp-scoring",
+          "how-it-works/settlement",
+          "how-it-works/pol"
+        ]
+      },
+      {
+        "group": "For creators",
+        "pages": [
+          "creators/launch-a-token",
+          "creators/admin-console",
+          "creators/incentives",
+          "creators/bag-lock"
+        ]
+      },
+      {
+        "group": "API reference",
+        "pages": [
+          "api-reference/season",
+          "api-reference/tokens",
+          "api-reference/events",
+          "api-reference/profile"
+        ]
+      },
+      {
+        "group": "Risks",
+        "pages": [
+          "risks/risk-disclosure"
+        ]
+      },
+      {
+        "group": "For operators",
+        "pages": [
+          "operators/sepolia-smoke",
+          "operators/zombie-tokens"
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
+    ]
   },
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "light": "/logo/wordmark-mono.svg",
+    "dark": "/logo/wordmark.svg"
   },
   "navbar": {
     "links": [
       {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "label": "GitHub",
+        "href": "https://github.com/starl3xx/filter-fun"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+      "label": "Open Arena",
+      "href": "https://filter.fun/arena"
     }
   },
   "contextual": {
     "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
+      "copy",
+      "view",
+      "claude",
+      "chatgpt",
+      "mcp",
+      "add-mcp",
+      "cursor"
+    ]
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "x": "https://x.com/filterfun",
+      "github": "https://github.com/starl3xx/filter-fun"
     }
   }
 }

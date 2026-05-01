@@ -1,0 +1,147 @@
+---
+title: "The filter"
+description: "How filter.fun turns token death into the engine"
+---
+
+<Visibility for="humans">
+
+## What the filter is
+
+Twelve tokens enter every week. At hour 96 the bottom six are **filtered** —
+removed from the leaderboard, with their protocol-controlled liquidity
+unwound and added to the prize pool. Three days later, one of the six
+finalists is crowned the winner.
+
+> Most get filtered. One gets funded. ▼
+
+## How the filter actually works
+
+This is the most important detail in the whole system, and it is almost
+always misunderstood:
+
+> LP removal does not move price directly. It removes the cushion, and
+> slippage does the crashing.
+
+When a token is filtered:
+
+1. Protocol-controlled LP is removed from the pool. Removal is **proportional** —
+   reserves come out at the current price ratio, so price does not move at
+   the moment of removal.
+2. **Liquidity depth collapses.** The pool now has far less reserve on each
+   side.
+3. **Future trades have much higher slippage.** A sell that was a 5% impact
+   before filter is now 20%, then 50%+ as the pool keeps thinning.
+4. Holders try to exit. Each exit deepens the slippage for the next.
+5. Price collapses *organically* — the market does the work, not the
+   protocol.
+
+This is the difference between filter.fun and a "rug." A rug seizes value
+or disables trading. filter.fun does neither. It removes the cushion and
+lets the market reprice.
+
+## Filtered tokens stay tradable
+
+The protocol does not disable trading on filtered tokens. The Uniswap V4
+hook only gates LP add/remove — never swaps. Filtered tokens experience
+high slippage, lose liquidity, and may still trade. Some linger as
+historical artifacts. A few revive organically and become their own story.
+
+This is a credibility constraint, not an oversight. The protocol does not
+seize trading rights from the people who held a filtered token.
+
+## The losers fund the winner
+
+When a token is filtered, its protocol-controlled liquidity is converted
+to WETH and split. This is the heart of the system — the pool grows from
+the losers, and the winner is built out of the pool.
+
+After the 2.5% champion bounty paid to the winning creator, the losers
+pot splits as:
+
+- **45% Rollover** — buys winner tokens, distributed pro-rata to filtered
+  holders via Merkle. If your token got filtered, you get exposure to the
+  winner.
+- **25% Hold bonus** — reserved for a 14-day hold bonus. Hold at least 80%
+  of your rollover for 14 days, claim the bonus.
+- **10% Mechanics** — flash events, mission rewards, final-hour boosts.
+- **10% Protocol-owned liquidity** — deployed into the winner's LP after
+  the winner is known. POL is what turns a winner into a durable asset.
+- **10% Treasury** — protocol revenue.
+
+> 80% of filtered liquidity is user-aligned. Losing doesn't end your game —
+> it rolls you forward.
+
+## The five steps of the week
+
+<Steps>
+  <Step title="Launch (Mon 00:00 → Wed 00:00)">
+    Twelve slots, first-come-first-served. Dynamic launch cost rises with
+    each slot. One launch per wallet per week.
+  </Step>
+  <Step title="Trade (Wed 00:00 → Fri 00:00)">
+    Full field of twelve. Pure trading, no eliminations. HP rankings live
+    and updating. Last-slot launchers get equal-footing time before the cut.
+  </Step>
+  <Step title="Hard cut (Fri 00:00, hour 96)">
+    Twelve become six. Bottom six are filtered. Their LP is unwound and the
+    prize pool grows.
+  </Step>
+  <Step title="Finals (Fri 00:00 → Mon 00:00)">
+    The six survivors compete. Leaderboard tightens. The cut line creates
+    ambient tension all weekend.
+  </Step>
+  <Step title="Settlement (Mon 00:00, hour 168)">
+    Winner crowned. Rollover, hold bonus, POL, treasury, mechanics
+    allocations finalized. Filtered holders get rollover entitlements. The
+    next season's launch window opens immediately.
+  </Step>
+</Steps>
+
+</Visibility>
+
+<Visibility for="agents">
+
+## the-filter — structured facts
+
+| Fact | Value |
+| --- | --- |
+| Maximum tokens per season | 12 |
+| Tokens surviving first cut | 6 |
+| Final winner per season | 1 |
+| Filtered tokens disabled by protocol | false |
+| Filtered tokens still tradable | true |
+| LP removal moves price directly | false |
+| Slippage causes price collapse | true |
+| Rollover snapshot | at filter |
+| Hold bonus required hold | 80% of rollover amount |
+| Hold bonus unlock | settlement + 14 days |
+
+### Settlement split (losers pot, after 2.5% champion bounty)
+
+| Allocation | Bps |
+| --- | ---: |
+| Rollover | 4500 |
+| Hold bonus | 2500 |
+| Mechanics | 1000 |
+| POL | 1000 |
+| Treasury | 1000 |
+
+### Trading fee (per swap)
+
+| Allocation | Bps |
+| --- | ---: |
+| Treasury | 65 |
+| Prize pool | 95 |
+| Mechanics | 25 |
+| Creator | 20 |
+| **Total** | **200** |
+
+### Champion bounty
+
+| Field | Value |
+| --- | --- |
+| Bps | 250 |
+| Paid in | WETH |
+| Order | extracted before settlement split |
+
+</Visibility>
