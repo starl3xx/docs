@@ -1,11 +1,296 @@
 ---
 title: "Bag-lock"
-description: "Opt-in on-chain time-lock on creator holdings"
+description: "Opt-in on-chain time-lock on the creator's own holdings"
 ---
 
-<Note>
-  Coming soon — see the [filter.fun spec §38.5](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#385-differentiators-edge-beyond-clanker)
-  and [§38.8](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#388-bag-lock--why-its-the-killer-feature)
-  for why a verifiable lock on creator bags is the killer trust
-  differentiator. Mainnet activation is audit-gated.
-</Note>
+<Warning>
+**Mainnet activation is gated on the [Epic 2.3 audit](https://github.com/starl3xx/filter-fun/blob/main/ROADMAP.md#epic-23--audit--external-review).**
+Contracts are live on Base Sepolia for testnet UX validation. Do not
+yet rely on bag-lock semantics on mainnet — until the audit clears,
+bag-lock is testnet-only.
+</Warning>
+
+<Visibility for="humans">
+
+Bag-lock is filter.fun's structural answer to *"trust me, I won't dump
+my own bag."* A creator opts in to time-locking the tokens held by
+their own wallet. The lock is enforced by the token contract itself —
+it cannot be circumvented by the protocol, by the creator, or by anyone
+else.
+
+A creator with a 60-day lock has burned the option to rug for 60 days.
+That's a different category of trust signal than *"trust me bro."*
+
+## Why this is the killer feature
+
+Every other launchpad — Clanker, Bankr, Pump.fun — lets creators dump
+their own holdings whenever they want. The trust gradient is asymmetric:
+creators promise restraint, holders cannot verify it. Bag-lock collapses
+that gradient. A locked creator's commitment is a **public, on-chain
+fact**, readable by any block explorer, with no escape hatch and no
+unlock function.
+
+The product implication is simple: bag-locked tokens get a badge on the
+Arena leaderboard. Holders trade tokens with badges; creators who refuse
+to lock signal exactly that. The badge becomes table stakes for serious
+launches over time.
+
+See [spec §38.5](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#385-differentiators-edge-beyond-clanker)
+and [§38.8](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#388-bag-lock--why-its-the-killer-feature)
+for the strategic framing.
+
+## How to use it
+
+The contracts shipped to Base Sepolia in [PR #43](https://github.com/starl3xx/filter-fun/pull/43);
+the [creator console](/creators/admin-console) UI wrap is on its way as
+the Epic 1.13-web follow-up. Until then, lock from the contract directly
+on Sepolia:
+
+```sh
+# unlockUntil is a unix timestamp; the block must be strictly later
+# than block.timestamp AND strictly later than any existing lock.
+cast send $CREATOR_COMMITMENTS \
+  'commit(address,uint256)' $TOKEN $UNLOCK_UNTIL \
+  --rpc-url $BASE_SEPOLIA_RPC_URL \
+  --private-key $CREATOR_KEY
+```
+
+You must call `commit` from the **creator-of-record** wallet — the
+address that originally launched the token. Auth is checked against
+`CreatorRegistry.creatorOf(token)`, **not** `adminOf`. If you've handed
+admin to a multisig, the multisig cannot call `commit`; the lock is a
+personal commitment by the original launcher.
+
+To **extend** an existing lock, call `commit` again with a later
+timestamp. The contract refuses any value `<=` the existing unlock.
+
+To lock **forever**, pass `type(uint256).max`. The contract explicitly
+allows this; the gate will revert on every transfer from your address
+indefinitely.
+
+## How holders verify a lock
+
+`CreatorCommitments` exposes two view functions any holder can read
+without permission:
+
+```solidity
+function isLocked(address creator, address token) view returns (bool);
+function unlockOf(address creator, address token) view returns (uint256);
+```
+
+`isLocked` returns true if and only if `block.timestamp <
+unlockTimestamps[creator][token]`. `unlockOf` returns the raw unix
+timestamp (zero if no lock has ever been recorded).
+
+The contract address lives in the deployment manifest under
+`addresses.creatorCommitments`.
+
+## Five things bag-lock does NOT do
+
+These are the false-trust risks. The web UI must surface every one of
+them loudly — a holder who misunderstands the lock as broader than it
+is will feel betrayed when they encounter the gap.
+
+### 1. Pre-commit transfers escape
+
+If the creator transferred half their bag to a second wallet **before**
+calling `commit`, that second wallet is **not subject to the lock**. The
+gate is keyed off `(creator-address, token)`. Anything that left the
+creator's wallet before the commit lives outside the gate.
+
+The implication: a "creator locked X% of supply" badge must compute
+against the creator's **current** balance at commit time, not the
+launch-time balance. Otherwise a creator who pre-distributed gets
+credit for a lock they didn't actually take.
+
+### 2. Buying more is fine; selling is not
+
+Incoming transfers to the locked address still work. Fee revenue, tips,
+swaps from a different wallet into the locked address — all permitted.
+Only outgoing transfers from the locked address revert.
+
+This is intentional: a lock that prevented incoming credits would block
+creator-fee claims and trap the creator's revenue. The lock is about
+*not selling*, not *no activity*.
+
+### 3. The lock does not cover other wallets the creator controls
+
+Only the address that called `commit` is gated. If the creator quietly
+transferred to a sibling wallet they also control before committing,
+they can dump from the sibling without restriction. Detecting "common
+controller" addresses is an off-chain heuristic problem (Arkham-style),
+not something the contract can do.
+
+The implication: surface the creator's other on-chain activity
+(clusters, large transfers near commit time) so holders can form their
+own judgment. Don't claim the lock covers more than the literal mapping
+says.
+
+### 4. Lost keys = permanent lock
+
+If the creator loses access to the wallet that called `commit`, the bag
+is permanently locked. The protocol cannot rescue it. This is by
+design — an escape hatch would be the exact same hatch a creator could
+use to renege on the commitment.
+
+The implication: creators must be told this **before** they commit. The
+"Lock my bag" flow surfaces an acknowledgement: *"If you lose this
+wallet, your tokens stay locked forever. You cannot recover them."*
+
+### 5. Pre-1.13 tokens (Sepolia legacy)
+
+Tokens deployed **before** the Epic 1.13 FilterFactory redeploy do not
+consult the commitments contract. The gating code isn't in their
+bytecode. A creator of a pre-1.13 Sepolia token who calls `commit` will
+see it succeed (the contract doesn't know about the token's bytecode),
+but the lock will not enforce — transfers from their address will still
+go through.
+
+The operational implication: until the Sepolia FilterFactory is
+redeployed and old tokens are wound down or migrated, bag-lock is not
+advertised for pre-1.13 tokens. The Sepolia README and the in-app
+badge logic explicitly exclude them.
+
+## Locks extend, never shorten
+
+The contract enforces strict-`>` monotonicity:
+
+- Calling `commit` with a timestamp `<= block.timestamp` reverts with
+  `LockMustBeFuture`.
+- Calling `commit` with a timestamp `<=` the existing unlock reverts
+  with `LockCannotShorten`.
+- There is **no** `unlock` function. There is no `cancel`. There is no
+  admin override. There is no pause.
+
+This is the property that makes the lock credible. A function that
+could shorten the lock would be the same function a creator could use
+to renege. So the function does not exist.
+
+If a security issue is found post-deploy, the only remediation is to
+deploy a new contract instance. Locks recorded on the existing instance
+remain enforced for as long as the FilterToken contracts that reference
+it exist.
+
+## Audit constraints
+
+Mainnet activation is gated on
+[Epic 2.3](https://github.com/starl3xx/filter-fun/blob/main/ROADMAP.md#epic-23--audit--external-review).
+The audit specifically validates:
+
+- **No way to shorten or cancel a lock.** `commit` enforces strict-`>`
+  monotonicity; no other state-mutating function exists on
+  `CreatorCommitments`.
+- **No admin override.** The contract has no owner, no pause, no
+  upgradeability, no escape hatch.
+- **The transfer gate is consulted on every balance change** (not just
+  direct `transfer`). OZ v5's `_update` hook is the single funnel — the
+  override calls it on `transferFrom`, swap-routing, and burn paths too.
+- **Auth uses `creatorOf`, not `adminOf`.** Admin transfers do not
+  carry the bag-lock right.
+- **Reentrancy guard on `commit`.** Defensive — no current external
+  calls inside, but the guard is load-bearing if a future change adds
+  one.
+
+A loud failure mode caught in audit (lock-shortening, admin override,
+gate bypass) would be worse than not shipping the feature. That is why
+mainnet activation is gated.
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Creator console" icon="gauge" href="/creators/admin-console">
+    Where the bag-lock UI will live once the Epic 1.13-web follow-up
+    ships.
+  </Card>
+  <Card title="Launch a token" icon="rocket" href="/creators/launch-a-token">
+    The launch flow that establishes the creator-of-record bag-lock
+    keys off.
+  </Card>
+  <Card title="Risks" icon="triangle-exclamation" href="/risks/risk-disclosure">
+    What can happen, what isn't promised — including the limitations
+    above.
+  </Card>
+  <Card title="The filter" icon="filter" href="/how-it-works/the-filter">
+    The competitive cut bag-lock is designed to live alongside.
+  </Card>
+</CardGroup>
+
+</Visibility>
+
+<Visibility for="agents">
+
+## bag-lock — structured facts
+
+| Field | Value |
+| --- | --- |
+| contract | `CreatorCommitments` |
+| auth_field | `CreatorRegistry.creatorOf(token)` |
+| admin_can_commit | false (admin transfers do not carry bag-lock right) |
+| mainnet_status | **BLOCKED until Epic 2.3 audit** |
+| testnet_status | live on Base Sepolia (PR [#43](https://github.com/starl3xx/filter-fun/pull/43)) |
+| transfer_gate_location | `FilterToken._update` (OZ v5 universal balance funnel) |
+| transfer_gate_scope | from-side (locked address cannot send; receiving is allowed) |
+| pre_lock_transfer_escape | true (intentional, advertised) |
+| migration_for_pre_1_13_tokens | NONE — by design |
+
+### Functions
+
+| Function | Selector | Auth | Reverts on |
+| --- | --- | --- | --- |
+| `commit(address token, uint256 lockUntil)` | state-mutating | `creatorOf(token)` only | `TokenNotRegistered`, `NotCreator`, `LockMustBeFuture`, `LockCannotShorten` |
+| `isLocked(address creator, address token)` | view | public | — |
+| `unlockOf(address creator, address token)` | view | public | — |
+
+### Forbidden functions (do not exist)
+
+| Function | Reason |
+| --- | --- |
+| `unlock` | would defeat the purpose |
+| `cancel` | would defeat the purpose |
+| admin override | contract has no admin |
+| `pause` | contract is not pausable |
+| upgrade path | contract is not upgradeable |
+
+### Monotonicity (`commit`)
+
+| Constraint | Check |
+| --- | --- |
+| `lockUntil > block.timestamp` | revert `LockMustBeFuture` if not |
+| `lockUntil > unlockTimestamps[creator][token]` | revert `LockCannotShorten` if not |
+| `creatorOf(token) != address(0)` | revert `TokenNotRegistered` if zero |
+| `msg.sender == creatorOf(token)` | revert `NotCreator` if not |
+
+### Gate semantics
+
+| Block timestamp vs. `unlockTimestamps[creator][token]` | Outgoing transfer from `creator` |
+| --- | --- |
+| `block.timestamp < unlockTimestamp` | **reverts** with `TransferLocked(from, unlockAt)` |
+| `block.timestamp >= unlockTimestamp` | allowed |
+| `unlockTimestamp == 0` (no lock ever recorded) | allowed |
+
+### Five-things-it-does-not-do (false-trust risks)
+
+| Limitation | Mitigation |
+| --- | --- |
+| Pre-commit transfers escape | UI computes "% locked" against current balance at commit time |
+| Inbound transfers still allowed | by design — fee claims must work |
+| Sibling wallets not covered | UI surfaces creator's clustered activity |
+| Lost keys = permanent lock | UI requires acknowledgment before commit |
+| Pre-1.13 tokens not gated | UI excludes them from bag-lock badge |
+
+### Audit checklist (Epic 2.3)
+
+- No shorten / no cancel
+- No admin override
+- Gate consulted in `_update` (covers `transfer`, `transferFrom`, swap-routing, burn)
+- Auth uses `creatorOf`, not `adminOf`
+- Reentrancy guard on `commit`
+
+### See also
+
+- [`CreatorCommitments.sol`](https://github.com/starl3xx/filter-fun/blob/main/packages/contracts/src/CreatorCommitments.sol)
+- [`FilterToken.sol`](https://github.com/starl3xx/filter-fun/blob/main/packages/contracts/src/FilterToken.sol) (the gate)
+- [`CreatorCommitments.t.sol`](https://github.com/starl3xx/filter-fun/blob/main/packages/contracts/test/CreatorCommitments.t.sol) (coverage)
+- spec [§38.5](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#385-differentiators-edge-beyond-clanker), [§38.6](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#386-on-chain-primitives-required), [§38.7](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#387-out-of-scope-v2--future), [§38.8](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#388-bag-lock--why-its-the-killer-feature)
+
+</Visibility>

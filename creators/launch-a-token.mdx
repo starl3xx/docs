@@ -3,7 +3,241 @@ title: "Launch a token"
 description: "12 slots, FCFS, dynamic cost, one launch per wallet per week"
 ---
 
-<Note>
-  Coming soon — see the [filter.fun spec §4](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#4-launch-slot-system)
-  for the slot system, dynamic cost formula, and refundable stake rules.
-</Note>
+<Visibility for="humans">
+
+The launch window opens at **Mon 00:00 UTC** every week and closes 48
+hours later. During those 48 hours, twelve token slots fill on a
+first-come-first-served basis. Once the window shuts, the field is
+locked — you wait for the next season.
+
+> Get filtered or get funded ▼
+
+## What you're committing to
+
+Launching a token costs:
+
+- **A non-refundable launch cost** that rises with each slot taken
+- **A refundable stake** equal to the launch cost, held until Friday's
+  cut and returned if your token survives into the top 6
+
+You launch directly into a real Uniswap V4 pool. As soon as your tx
+confirms, your token is tradable on the Arena and your HP starts
+updating. There is no draft state, no review, no delay.
+
+You only get **one launch per wallet per week** ([spec §4.6](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#46-launch-constraints)).
+This is a hard cap — the contract reverts a second attempt with
+`LaunchCapReached`. If you want to ship two ideas in a week, you need a
+second wallet and a different ticker.
+
+## The slot grid
+
+The `/launch` page lays out twelve cards in a 4×3 grid. Each card is one
+of three states:
+
+- **Filled** — a creator already claimed this slot. Card shows the token
+  ticker, creator, current HP, and live status (`SAFE` / `AT RISK` /
+  `FINALIST` / `FILTERED`).
+- **Next** — the slot your launch will occupy if you submit now. The
+  card displays `Slot #N` and the current cost in ETH.
+- **Open** — slots that come after `next`. Greyed-out, showing only
+  their projected cost.
+
+The `next` slot pulses pink to draw your eye. As earlier slots fill, the
+`next` index advances and the cost on the form updates in real time.
+
+## Dynamic cost
+
+Each slot is more expensive than the last:
+
+```text
+launchCost = BASE_LAUNCH_COST × (1 + (slotIndex / MAX_LAUNCHES)²)
+```
+
+Where `MAX_LAUNCHES = 12` and `slotIndex` starts at 0. Slot 1 is the
+base cost; slot 12 is approximately **1.84× base**. The shape is
+quadratic — the curve is gentle for the first several slots and steepens
+toward the end.
+
+| Slot | Multiplier | Example (base = 0.05 ETH) |
+| ---: | ---: | ---: |
+| 1 | 1.00× | 0.050 ETH |
+| 6 | 1.25× | 0.063 ETH |
+| 12 | 1.84× | 0.092 ETH |
+
+The cost panel on the launch form shows the live total: launch cost +
+refundable stake. If a slot is claimed while you're filling out the form,
+the cost ticks up before submit, and the contract refuses an
+under-payment with `InsufficientPayment`.
+
+## Refundable stake
+
+When refundable stake is enabled (Sepolia + mainnet default), the
+contract holds an amount equal to the launch cost in escrow at launch
+time. At Friday's cut:
+
+- **Survive into the top 6** → the stake is refunded to your creator
+  wallet
+- **Get filtered (bottom 6)** → the stake is forfeited to the protocol's
+  configured `forfeitRecipient` (treasury by default)
+
+You can verify the stake mode on the launcher:
+
+```sh
+cast call $LAUNCHER 'refundableStakeEnabled()(bool)' --rpc-url $RPC
+```
+
+The stake is independent from the launch cost itself — surviving the cut
+gets your stake back, but the launch cost is gone either way.
+
+## The launch form
+
+| Field | Required | Notes |
+| --- | --- | --- |
+| Name | yes | Display name on the Arena |
+| Ticker | yes | 1–10 chars, A–Z, 0–9; canonicalized before submit. Unique per season — the contract reverts on duplicates |
+| Description | yes | Short pitch shown in the token detail panel |
+| Image | yes | Logo. Pinned to IPFS by the launch flow |
+| Website | no | Optional |
+| X handle | no | Optional |
+| Farcaster | no | Optional |
+
+Below the fields, a checkbox you must tick before the button enables:
+
+> *"I understand most tokens get filtered ▼"*
+
+This isn't a footer disclaimer. It's the entry contract. See
+[Risks](/risks/risk-disclosure).
+
+## The launch flow
+
+<Steps>
+  <Step title="Connect your wallet">
+    The form is hidden until a wallet is connected. The launcher reads
+    your address to enforce the per-wallet cap before you spend gas.
+  </Step>
+  <Step title="Fill the form">
+    Name, ticker, description, image, optional socials. The cost panel
+    updates live as earlier slots fill. The "I understand…" checkbox
+    must be ticked.
+  </Step>
+  <Step title="Pin metadata">
+    On submit, the page POSTs your fields to `/api/metadata`, which pins
+    a JSON blob to IPFS and returns a URI. This step takes a few seconds
+    and runs **before** the wallet popup so a network failure here costs
+    you no gas.
+  </Step>
+  <Step title="Confirm the transaction">
+    Wallet pops with `launchToken(name, symbol, metadataURI)` and
+    `msg.value = launchCost + refundableStake`. The contract validates
+    season phase, per-wallet cap, ticker uniqueness, and slot
+    availability — any failure reverts with a typed error.
+  </Step>
+  <Step title="Land in the Arena">
+    On success, the page redirects to `/?token=<your address>` —
+    home is the Arena, your token is selected, your HP is at zero, and
+    the leaderboard starts ranking you on the next tick.
+  </Step>
+</Steps>
+
+## What happens after
+
+Your token is tradable through Uniswap V4 the moment the launch
+transaction confirms. Going early gets you more pre-cut trading time
+which is the implicit reward for paying the slot-1 cost on a partially
+empty grid. Last-slot launchers still get a fair 48 hours of
+equal-footing trading between launch close (Wed 00:00) and the cut (Fri
+00:00) — see [Season cadence](/how-it-works/season-cadence).
+
+From here you'll spend most of your time on the [creator console](/creators/admin-console) —
+your per-token cockpit for HP, fee claims, and admin actions.
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Creator console" icon="gauge" href="/creators/admin-console">
+    Watch HP, claim trading fees, update metadata, transfer admin.
+  </Card>
+  <Card title="Creator incentives" icon="coins" href="/creators/incentives">
+    The 0.20% trading fee, the 2.5% champion bounty, the refundable
+    stake — what creators actually earn.
+  </Card>
+  <Card title="Bag-lock" icon="lock" href="/creators/bag-lock">
+    Opt-in time-lock on your own holdings. The trust signal vs. every
+    other launchpad.
+  </Card>
+  <Card title="The filter" icon="filter" href="/how-it-works/the-filter">
+    What it means to be filtered, and why filtered tokens keep trading.
+  </Card>
+</CardGroup>
+
+</Visibility>
+
+<Visibility for="agents">
+
+## launch-a-token — structured facts
+
+| Field | Value |
+| --- | --- |
+| launch_window_hours | 48 |
+| launch_window_open_utc | Mon 00:00 (anchored weekly) |
+| max_tokens_per_season | 12 |
+| max_launches_per_wallet_per_week | 1 |
+| ticker_unique_per_season | true |
+| metadata_required_fields | name, ticker, description, image |
+| metadata_optional_fields | website, x, farcaster |
+| metadata_storage | IPFS (URI stored on-chain as opaque string) |
+| canonical_pitch_required_in_form | "I understand most tokens get filtered ▼" |
+| trading_starts_at | tx confirmation (no draft state) |
+
+### Cost formula
+
+```text
+launchCost = BASE_LAUNCH_COST × (1 + (slotIndex / 12)²)
+```
+
+| slotIndex | multiplier_vs_base |
+| ---: | ---: |
+| 0 | 1.00 |
+| 5 | 1.17 |
+| 11 | 1.84 |
+
+### Refundable stake
+
+| Field | Value |
+| --- | --- |
+| stake_amount | equal to launchCost |
+| stake_mode_toggle | `FilterLauncher.refundableStakeEnabled()` |
+| outcome_top_6 | refunded to creator |
+| outcome_filtered | forfeited to `forfeitRecipient` (default: treasury) |
+
+### Contract entrypoint
+
+| Function | Signature |
+| --- | --- |
+| Launch | `FilterLauncher.launchToken(string name, string symbol, string metadataURI) payable` |
+| `msg.value` | `launchCost + refundableStake` |
+
+### Errors
+
+| Error | Cause |
+| --- | --- |
+| `LaunchCapReached` | wallet already launched this season |
+| `InsufficientPayment` | `msg.value` below `launchCost + refundableStake` |
+| `DuplicateSymbol` | ticker already used this season |
+| `WindowClosed` | launch window expired or season not in launch phase |
+
+### Mutable post-launch (admin-gated)
+
+| Field | Setter |
+| --- | --- |
+| `metadataURI` | `CreatorRegistry.setMetadataURI(token, uri)` |
+| creator-fee recipient | `CreatorRegistry.setCreatorRecipient(token, addr)` |
+| admin (two-step) | `nominateAdmin(token, addr)` → `acceptAdmin(token)` |
+
+### Immutable post-launch
+
+`name`, `symbol`, total supply, V4 pool key, fee tier, and the
+creator-of-record (per `CreatorRegistry.creatorOf`). Bag-lock keys off
+the creator-of-record, never off the admin.
+
+</Visibility>

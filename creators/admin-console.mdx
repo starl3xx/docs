@@ -1,9 +1,275 @@
 ---
-title: "Admin console"
-description: "Per-token admin/dev page for creators"
+title: "Creator console"
+description: "Per-token cockpit — HP, fees, metadata, admin transfer"
 ---
 
-<Note>
-  Coming soon — see the [filter.fun spec §38](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#38-creator-admin-console)
-  for the layout, on-chain primitives, and Clanker-parity feature list.
-</Note>
+<Visibility for="humans">
+
+The creator console is the page you live on once your token is in flight.
+It surfaces everything you need to manage the token, watch the
+competition, and signal trustworthiness to holders. The route is
+`/token/[address]/admin` — replace `[address]` with your token's
+contract address.
+
+## Three columns
+
+The page mirrors the [Arena's](/) three-column structure for muscle
+memory: identity + claim on the left, live competitive status in the
+center, metadata + admin actions on the right. On mobile it collapses
+to a single column with the same logical order.
+
+```text
+┌────────────────────────────────────────────────────────────────────┐
+│  Header — token, address, chain badge, "Admin" badge if you are    │
+├──────────────────┬───────────────────────────┬─────────────────────┤
+│  LEFT            │  CENTER                   │  RIGHT              │
+│  ────            │  ──────                   │  ─────              │
+│  Token info      │  HP score + components    │  Update metadata    │
+│  Claim fees      │  Rank + cut-line distance │  Update recipient   │
+│                  │  Phase + countdown        │  Transfer admin     │
+│                  │  Stake status             │  Bag-lock (soon)    │
+│                  │  Bounty estimate          │  Verify (soon)      │
+│                  │  Settlement preview       │  Bulk distribute    │
+│                  │  Survival actions         │                     │
+└──────────────────┴───────────────────────────┴─────────────────────┘
+```
+
+## Auth states
+
+The console reads the connected wallet against `CreatorRegistry.adminOf`
+and renders one of four states:
+
+| State | What you can do |
+| --- | --- |
+| `DISCONNECTED` | Read-only. All admin actions show a "Connect wallet" CTA. |
+| `READ_ONLY` | Connected, but not the admin. Same read-only treatment plus a banner identifying the current admin. |
+| `PENDING` | Your wallet was nominated by the current admin. The page surfaces an `Accept admin` action and nothing else; once accepted, you transition to `ADMIN`. |
+| `ADMIN` | Full control. All forms enabled. |
+
+The page is safe to share — anyone can open the console for any token
+to read its live state. Editing requires the admin wallet.
+
+## Live competitive status (center column)
+
+This is what makes the console a *creator console* rather than a generic
+launchpad admin page. Numbers update without refresh.
+
+### HP and components
+
+The HP panel shows your token's score (0–100) and the five-component
+breakdown using the [spec §6.6](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#66-ui-labels)
+human-readable labels — never internal field names:
+
+| UI label | Internal field |
+| --- | --- |
+| Buying activity | `velocity` |
+| Real participants | `effectiveBuyers` |
+| Liquidity strength | `stickyLiquidity` |
+| Holder conviction | `retention` |
+| Momentum | `momentum` |
+
+Each component is a 0-1 score. Weights shift by phase (pre-filter
+favors discovery; finals favors conviction; see
+[HP scoring](/how-it-works/hp-scoring)).
+
+### Rank + cut-line distance
+
+The rank panel shows where you sit in the cohort and how far you are
+from the cut line (rank 6 vs rank 7). Two callouts:
+
+- **`SAFE by N HP`** — you're above the cut by N points
+- **`AT RISK by N HP`** — you're below the cut by N points
+
+### Phase + countdown
+
+The countdown ticks against the locked cadence — cut at hour 96,
+settlement at hour 168 (see [Season cadence](/how-it-works/season-cadence)).
+Displayed times are local; the underlying timestamps are UTC.
+
+### Refundable stake status
+
+If your launch was made with stake mode enabled, this panel tells you:
+
+- the amount held
+- whether it will refund (top 6) or forfeit (bottom 6) at the cut
+- the resolved outcome after the cut fires
+
+### Champion bounty estimate
+
+If your token wins the week, the creator earns 2.5% of the losers pot
+as a champion bounty. The estimate updates live as the pool grows.
+See [Creator incentives](/creators/incentives) for the math.
+
+### Settlement preview (live during finals)
+
+During finals only — for tokens in the top 6 — this panel shows what
+would happen if finals ended right now: rank, expected outcome,
+rollover entitlement of holders if filtered.
+
+### Survival actions
+
+A heuristic recommendations widget. It surfaces things like *"Retention
+dropping — consider community engagement."* These are informational, not
+prescriptive, and have no effect on HP.
+
+## Admin actions (right column)
+
+### Update metadata
+
+Edit name, description, image URL, and socials. Calls
+`CreatorRegistry.setMetadataURI(token, uri)`. The contract stores the
+URI as an opaque string; field validation lives in the form. Open in
+read-only state if you're not the admin.
+
+### Update creator recipient
+
+The 0.20% trading-fee creator share flows to the recipient address.
+By default, the recipient equals the creator (you, at launch time).
+Calls `CreatorRegistry.setCreatorRecipient(token, addr)` — admin-gated,
+reentrancy-guarded, reverts on the zero address.
+
+### Transfer admin (two-step)
+
+Admin transfer is intentionally two-step:
+
+<Steps>
+  <Step title="Current admin nominates">
+    Calls `nominateAdmin(token, newAddr)`. Emits an event, stores
+    `pendingAdmin = newAddr`. Nothing changes yet.
+  </Step>
+  <Step title="New admin accepts">
+    The nominated wallet visits the same console and clicks `Accept
+    admin`, which calls `acceptAdmin(token)`. The handover completes
+    atomically.
+  </Step>
+</Steps>
+
+The current admin can withdraw the offer at any time before acceptance
+via `cancelNomination(token)`. Why two-step? It prevents the classic
+footgun of nominating the wrong address — a typo on a one-step setter
+would lock you out of your own token forever. Two-step makes the same
+typo recoverable: cancel and re-nominate.
+
+Bag-lock auth is **not** transferrable. Bag-lock keys off the
+creator-of-record, never off the admin — see [Bag-lock](/creators/bag-lock).
+A creator who hands admin to a multisig retains the right to lock their
+own bag.
+
+### Claim creator fees (left column)
+
+Accumulated WETH from the 0.20% creator-fee share, claimable by the
+creator on demand. The button has three states:
+
+- `Connect to claim` — wallet not connected
+- `Only the creator can claim` — wrong wallet (a non-creator, non-admin)
+- `Nothing to claim` — connected creator, but balance is zero
+
+When you claim, WETH is sent to the **configured recipient**, not the
+caller. The creator triggers; funds land at the recipient. Update the
+recipient first if you want them to land somewhere else.
+
+### Bag-lock + Verify (placeholders)
+
+Both render as "Coming soon" cards in the right column today.
+
+- **Bag-lock** — opt-in on-chain time-lock on your own holdings
+  ([Epic 1.13](https://github.com/starl3xx/filter-fun/blob/main/ROADMAP.md#epic-113--creator-bag-lock-commitments-audit-gated-for-mainnet)).
+  Contracts shipped to Sepolia in PR [#43](https://github.com/starl3xx/filter-fun/pull/43);
+  web wrap pending. Mainnet activation is gated on the Epic 2.3 audit.
+  Read [Bag-lock](/creators/bag-lock) for the full picture.
+- **Verify** — off-chain attestation flow (design pending). Verified
+  badge will surface on the Arena leaderboard once shipped.
+
+### Bulk distribute
+
+A deep link to [Disperse.app](https://disperse.app) pre-populated with
+your token address. Useful for airdrops, allocator distributions, and
+rewarding early holders. Recipients are entered manually on the
+Disperse side.
+
+## Past tokens
+
+The left column shows your launch history below the claim panel — every
+token your wallet has launched, with the season number and the final
+outcome (filtered / finals / winner).
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Creator incentives" icon="coins" href="/creators/incentives">
+    The 0.20% fee, the 2.5% champion bounty, the refundable stake.
+  </Card>
+  <Card title="Bag-lock" icon="lock" href="/creators/bag-lock">
+    The killer trust signal. What it does, what it doesn't, why mainnet
+    is audit-gated.
+  </Card>
+  <Card title="Launch a token" icon="rocket" href="/creators/launch-a-token">
+    The launch form, slot grid, dynamic cost, and refundable stake.
+  </Card>
+  <Card title="Risks" icon="triangle-exclamation" href="/risks/risk-disclosure">
+    What can happen, what isn't promised.
+  </Card>
+</CardGroup>
+
+</Visibility>
+
+<Visibility for="agents">
+
+## admin-console — structured facts
+
+| Field | Value |
+| --- | --- |
+| route | `/token/[address]/admin` |
+| read_visibility | public (no auth required to view) |
+| edit_visibility | admin wallet only |
+
+### Auth states
+
+| State | Trigger | Edit allowed |
+| --- | --- | --- |
+| `DISCONNECTED` | no wallet connected | no |
+| `READ_ONLY` | connected wallet ≠ admin and ≠ pendingAdmin | no |
+| `PENDING` | connected wallet == pendingAdmin | only `acceptAdmin` |
+| `ADMIN` | connected wallet == admin | yes |
+
+### Admin write actions
+
+| Function | Auth | Notes |
+| --- | --- | --- |
+| `CreatorRegistry.setMetadataURI(token, uri)` | current admin | reverts on empty URI |
+| `CreatorRegistry.setCreatorRecipient(token, addr)` | current admin | reverts on zero address; reentrancy-guarded |
+| `CreatorRegistry.nominateAdmin(token, newAddr)` | current admin | sets `pendingAdmin`; idempotent |
+| `CreatorRegistry.cancelNomination(token)` | current admin | clears `pendingAdmin` |
+| `CreatorRegistry.acceptAdmin(token)` | pending admin only | atomic handover; clears `pendingAdmin` |
+| `CreatorFeeDistributor.claim(token)` | creator | pays `recipientOf(token)` |
+
+### HP component → UI label mapping
+
+Translate before display. Never expose internal field names.
+
+| Internal field | UI label |
+| --- | --- |
+| `velocity` | Buying activity |
+| `effectiveBuyers` | Real participants |
+| `stickyLiquidity` | Liquidity strength |
+| `retention` | Holder conviction |
+| `momentum` | Momentum |
+
+### HP source
+
+Read live from the indexer:
+
+```http
+GET /tokens
+```
+
+Each token row carries `hp` and `components.{velocity,effectiveBuyers,stickyLiquidity,retention,momentum}`
+on a 0–1 scale, plus `weights` for the active phase.
+
+### Bag-lock auth (not transferrable via admin transfer)
+
+Bag-lock keys off `CreatorRegistry.creatorOf(token)`, NOT `adminOf`.
+Admin transfers do not carry the bag-lock right. See
+[Bag-lock](/creators/bag-lock).
+
+</Visibility>

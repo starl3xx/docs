@@ -1,10 +1,195 @@
 ---
 title: "Creator incentives"
-description: "Trading-fee share, champion bounty, refundable stake"
+description: "What creators earn — fees, bounty, refundable stake"
 ---
 
-<Note>
-  Coming soon — see the [filter.fun spec §10](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#10-creator-incentives)
-  for the 0.20% creator fee, the 2.5% champion bounty, and anti-gaming
-  rules.
-</Note>
+<Visibility for="humans">
+
+Creators earn from three sources. Two are upside; one is your money
+back if you survive.
+
+| Source | Size | When |
+| --- | --- | --- |
+| Trading fee share | 0.20% of volume | Continuous, while live |
+| Champion bounty | 2.5% of losers pot | If your token wins the week |
+| Refundable launch stake | = launch cost | Returned if you survive Friday's cut |
+
+## 0.20% trading-fee share
+
+Every swap on a token's Uniswap V4 pool pays a flat **200 bps** fee.
+That 200 bps splits four ways at the moment of the swap:
+
+| Slice | Bps | Goes to |
+| --- | ---: | --- |
+| Treasury | 65 | `TreasuryTimelock` |
+| Prize pool | 95 | season prize pool |
+| Mechanics | 25 | events / missions wallet |
+| Creator | 20 | `CreatorFeeDistributor` (claimable by you) |
+
+The creator slice accrues to your token's row in
+`CreatorFeeDistributor`, payable in WETH. You claim from the
+[creator console](/creators/admin-console), and WETH is sent to the
+configured **recipient** — not the wallet that triggered the claim.
+
+### Example — fees on Ξ50 of weekly volume
+
+Say your token does Ξ50 of trading volume across the week. The creator
+share is `Ξ50 × 0.20% = Ξ0.10` (≈ $250 at $2.5k ETH). Hit the claim
+button after settlement and the recipient receives Ξ0.10 in WETH.
+
+### When fees stop accruing
+
+The creator-fee window closes at the **earliest** of:
+
+- 72 hours after launch (cap on dormant trade)
+- the token is filtered (cut at hour 96 or settlement at hour 168)
+- final settlement of the season
+
+Tokens that make finals can keep accruing creator fees through the
+finals phase; the window closes at settlement. After that, the
+long-tail-trading fees route through the standard fee splits but the
+creator slice is no longer credited. (Long-tail policy is tracked in
+[spec §10.3](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#103-creator-fee-window).)
+
+## 2.5% champion bounty
+
+If your token **wins** the week, the protocol takes 2.5% of the losers
+pot off the top — before the standard settlement split — and pays it
+to your configured recipient. The constant is `CHAMPION_BOUNTY_BPS = 250`.
+
+### Example — winning a Ξ4 pot
+
+The losers pot is built from the WETH unwound from the bottom-six tokens
+plus the season's accumulated trading-fee prize pool share. Suppose a
+quiet week ends with a losers pot of Ξ4. If your token wins:
+
+```text
+champion_bounty   = Ξ4 × 2.5%   = Ξ0.10
+remaining_pot     = Ξ4 − Ξ0.10  = Ξ3.90  (split per settlement)
+```
+
+Then [Settlement](/how-it-works/settlement) applies the 45/25/10/10/10
+split to the **remaining** pot — rollover to filtered holders, hold
+bonus reserve, mechanics, POL, and treasury all draw from Ξ3.90, not
+Ξ4. The bounty is paid first.
+
+The bounty scales with the pot, so a viral week with a Ξ40 pot pays a
+Ξ1 bounty to the winning creator.
+
+## Refundable launch stake
+
+When stake mode is on, the launcher escrows an amount equal to the
+launch cost at launch time. The stake's outcome is decided at Friday's
+cut:
+
+- **Top 6 (you survived)** → stake refunded to the creator wallet
+- **Bottom 6 (filtered)** → stake forfeited to the protocol's
+  configured `forfeitRecipient` (treasury by default)
+
+The stake isn't a profit center — it's your money back if you don't
+get filtered early. See [Launch a token](/creators/launch-a-token) for
+the cost formula and the launch flow.
+
+## Anti-gaming
+
+Three rules prevent creators from gaming their own token:
+
+- **No referral fees on your own token's trades.** The referral system
+  refuses to credit a creator wallet for traffic on the token it
+  launched.
+- **Creator fees do not affect HP.** The 0.20% creator slice is paid
+  out of the pool but isn't visible to the HP engine. You can't pump
+  HP by trading your own token.
+- **Optional payout cap.** A configurable per-token max on creator fees
+  is available at deploy time. Default is uncapped; if turned on, the
+  contract refuses claims past the cap.
+
+See [spec §10.6](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#106-anti-gaming)
+for the full anti-gaming surface.
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Creator console" icon="gauge" href="/creators/admin-console">
+    Where you claim the fee share and watch the bounty estimate update
+    live.
+  </Card>
+  <Card title="Bag-lock" icon="lock" href="/creators/bag-lock">
+    Lock your own bag for a fixed period — the trust signal vs. every
+    other launchpad.
+  </Card>
+  <Card title="Settlement" icon="scale-balanced" href="/how-it-works/settlement">
+    Where the 2.5% bounty fits in the full settlement order.
+  </Card>
+  <Card title="The filter" icon="filter" href="/how-it-works/the-filter">
+    What "win" and "filtered" actually mean.
+  </Card>
+</CardGroup>
+
+</Visibility>
+
+<Visibility for="agents">
+
+## creator-incentives — structured facts
+
+### Trading fee split (per-swap, 200 bps total)
+
+| Slice | Bps | Recipient |
+| --- | ---: | --- |
+| Treasury | 65 | `TreasuryTimelock` |
+| Prize pool | 95 | season prize pool |
+| Mechanics | 25 | mechanics wallet |
+| Creator | 20 | `CreatorFeeDistributor` (claimable by configured recipient) |
+
+### Creator fee window
+
+| Closes at | Trigger |
+| --- | --- |
+| `launchTime + 72h` | dormant cap |
+| `block.timestamp == filterFiredAt(token)` | token filtered |
+| `block.timestamp == settlementAt(seasonId)` | final settlement |
+
+Window resolution is the **earliest** of the three.
+
+### Champion bounty
+
+| Field | Value |
+| --- | --- |
+| `CHAMPION_BOUNTY_BPS` | 250 (2.5%) |
+| Source | losers pot |
+| Order | extracted before standard settlement split |
+| Paid in | WETH |
+| Paid to | configured creator recipient (`CreatorRegistry.recipientOf(token)`) |
+
+### Refundable launch stake
+
+| Field | Value |
+| --- | --- |
+| Stake amount | equal to `launchCost` |
+| Mode toggle | `FilterLauncher.refundableStakeEnabled()` |
+| Outcome top 6 | refunded to creator |
+| Outcome filtered | forfeited to `forfeitRecipient` (default: treasury) |
+
+### Anti-gaming
+
+| Rule | Enforced by |
+| --- | --- |
+| `no_referral_on_own_token` | true | referral system check |
+| `creator_fees_affect_hp` | false | scoring engine ignores creator-slice WETH |
+| `max_payout_cap` | optional, configurable per deploy | `CreatorFeeDistributor` |
+
+### Worked numerics
+
+| Scenario | Volume | Creator earns |
+| --- | ---: | ---: |
+| Quiet week | Ξ50 | Ξ0.100 (0.20%) |
+| Average week | Ξ500 | Ξ1.000 (0.20%) |
+| Viral week | Ξ5,000 | Ξ10.000 (0.20%) |
+
+| Scenario | Losers pot | Champion bounty (if winner) |
+| --- | ---: | ---: |
+| Quiet week | Ξ4 | Ξ0.10 |
+| Average week | Ξ20 | Ξ0.50 |
+| Viral week | Ξ40 | Ξ1.00 |
+
+</Visibility>
