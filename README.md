@@ -3,6 +3,16 @@
 Documentation site for [filter.fun](https://filter.fun) — a weekly
 token-launch tournament on Base. *Get filtered or get funded ▼*
 
+**Live site:** [docs.filter.fun](https://docs.filter.fun)
+
+filter.fun runs three subdomains under one apex:
+
+| Surface | Host |
+| --- | --- |
+| Web app (Arena gameplay) | [filter.fun](https://filter.fun) |
+| Docs (this repo) | [docs.filter.fun](https://docs.filter.fun) |
+| Indexer API | [api.filter.fun](https://api.filter.fun) |
+
 The product spec, contracts, indexer, and web app live in the main
 monorepo at [github.com/starl3xx/filter-fun](https://github.com/starl3xx/filter-fun).
 
