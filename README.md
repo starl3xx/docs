@@ -1,55 +1,48 @@
-# Mintlify Starter Kit
+# filter.fun docs
 
-Use the starter kit to get your docs deployed and ready to customize.
+Documentation site for [filter.fun](https://filter.fun) — a weekly
+token-launch tournament on Base. *Get filtered or get funded ▼*
 
-Click the green **Use this template** button at the top of this repo to copy the Mintlify starter kit. The starter kit contains examples with
+The product spec, contracts, indexer, and web app live in the main
+monorepo at [github.com/starl3xx/filter-fun](https://github.com/starl3xx/filter-fun).
 
-- Guide pages
-- Navigation
-- Customizations
-- API reference pages
-- Use of popular components
+## Local preview
 
-**[Follow the full quickstart guide](https://starter.mintlify.com/quickstart)**
+Install the [Mintlify CLI](https://www.npmjs.com/package/mint):
 
-## AI-assisted writing
-
-Set up your AI coding tool to work with Mintlify:
-
-```bash
-npx skills add https://mintlify.com/docs
-```
-
-This command installs Mintlify's documentation skill for your configured AI tools like Claude Code, Cursor, Windsurf, and others. The skill includes component reference, writing standards, and workflow guidance.
-
-See the [AI tools guides](/ai-tools) for tool-specific setup.
-
-## Development
-
-Install the [Mintlify CLI](https://www.npmjs.com/package/mint) to preview your documentation changes locally. To install, use the following command:
-
-```
+```sh
 npm i -g mint
 ```
 
-Run the following command at the root of your documentation, where your `docs.json` is located:
+From the repo root (where `docs.json` lives):
 
-```
+```sh
 mint dev
 ```
 
-View your local preview at `http://localhost:3000`.
+Preview at `http://localhost:3000`.
 
-## Publishing changes
+## Check links
 
-Install our GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app) to propagate changes from your repo to your deployment. Changes are deployed to production automatically after pushing to the default branch.
+```sh
+mint broken-links
+```
 
-## Need help?
+## Publishing
 
-### Troubleshooting
+Mintlify's GitHub app deploys to production automatically on every push
+to `main`.
 
-- If your dev environment isn't running: Run `mint update` to ensure you have the most recent version of the CLI.
-- If a page loads as a 404: Make sure you are running in a folder with a valid `docs.json`.
+## Contributing
 
-### Resources
-- [Mintlify documentation](https://mintlify.com/docs)
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the workflow and writing
+guidelines, and [`AGENTS.md`](./AGENTS.md) for the brand + voice rules
+(locked tagline, the ▼ glyph, banned phrasings, dual-audience pages).
+
+## Source of truth
+
+- **Spec:** the [comprehensive spec](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md)
+  in the main repo. If a docs claim contradicts the spec, the spec wins.
+- **Roadmap:** the [roadmap](https://github.com/starl3xx/filter-fun/blob/main/ROADMAP.md)
+  determines tense — shipped epics use present tense, pending epics
+  use "coming soon" or are omitted.

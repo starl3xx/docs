@@ -1,8 +1,74 @@
-> **First-time setup**: Customize this file for your project. Prompt the user to customize this file for their project.
-> For Mintlify product knowledge (components, configuration, writing standards),
-> install the Mintlify skill: `npx skills add https://mintlify.com/docs`
+# filter.fun documentation — agent rules
 
-# Documentation project instructions
+These rules apply to every page in this repo. The Mintlify-flavor guidance
+below is also valid; filter.fun rules take precedence on conflict.
+
+## Source of truth
+
+- **Spec:** `/Users/jakebouma/Documents/Claude/Projects/filter.fun/filter_fun_comprehensive_spec.md`
+  is the design source of truth. If a docs claim contradicts the spec, the
+  spec wins — fix the docs to match.
+- **Roadmap:** `/Users/jakebouma/Documents/Claude/Projects/filter.fun/ROADMAP.md`
+  determines tense. Shipped epics → present tense. Pending → "coming soon"
+  or omit. Never describe pending behavior as if it ships today.
+- **Brand kit:** `/Users/jakebouma/Documents/Claude/Projects/filter.fun/filter.fun-brand-kit/`
+  is canonical. Colors come from `palette.json`; do not introduce non-brand
+  colors in MDX styling.
+
+## The mark
+
+The mark is **▼** (U+25BC, BLACK DOWN-POINTING TRIANGLE), **not** 🔻 (the
+emoji). The geometric glyph carries the brand pink→red gradient on visual
+surfaces. The emoji is acceptable only as casual shorthand in chat / social
+copy where SVG can't render — never on a docs page.
+
+## Locked tagline + canonical pitch
+
+Locked tagline form:
+
+> *"Get filtered or get funded ▼"*
+
+Use this exact phrasing as the primary tagline.
+
+The canonical elevator pitch — use **verbatim**, do not paraphrase:
+
+> "One of the problems with most token launchpads is that the vast
+> majority of tokens launched die or never take off at all. With
+> filter.fun, that's a feature, not a bug. We've solved launchpads."
+
+Acceptable short forms: *"We've solved launchpads."* / *"Death is the engine."*
+
+## Dual-audience pages
+
+Every page that has structured facts (cadence hours, percentages, contract
+addresses, status booleans) must use the dual-audience pattern:
+
+- `<Visibility for="humans">` — friendly explainer, prose, diagrams.
+- `<Visibility for="agents">` — structured facts, tables, JSON-friendly
+  shapes. Agents reading the docs (Claude / ChatGPT / MCP clients) get the
+  same numbers without having to parse marketing copy.
+
+## Banned phrasings (spec §32.3)
+
+Never say:
+
+- "guaranteed returns"
+- "safe" or "risk-free"
+- "passive income"
+- heavy casino language
+- heavy technical jargon
+
+The system is speculative, competitive, partially zero-sum, and risky. Say
+that plainly. The risk page is a feature, not a footnote.
+
+## Voice (spec §32.2)
+
+Sharp, competitive, clear, slightly ruthless. Not scammy. Not overhyped.
+Transparent about risk. Active voice and second person ("you").
+
+---
+
+# Mintlify project conventions
 
 ## About this project
 
@@ -12,22 +78,16 @@
 - Run `mint dev` to preview locally
 - Run `mint broken-links` to check links
 
-## Terminology
+## Style
 
-{/* Add product-specific terms and preferred usage */}
-{/* Example: Use "workspace" not "project", "member" not "user" */}
-
-## Style preferences
-
-{/* Add any project-specific style rules below */}
-
-- Use active voice and second person ("you")
-- Keep sentences concise — one idea per sentence
-- Use sentence case for headings
+- Sentence case for headings
 - Bold for UI elements: Click **Settings**
-- Code formatting for file names, commands, paths, and code references
+- Code formatting for file names, commands, paths, code references
+- Markdown links between pages use absolute paths (`/how-it-works/the-filter`),
+  not relative
 
-## Content boundaries
+## Components in use
 
-{/* Define what should and shouldn't be documented */}
-{/* Example: Don't document internal admin features */}
+`<Visibility>`, `<Prompt>`, `<CardGroup>`, `<Card>`, `<Steps>`, `<Step>`,
+`<Frame>`, `<Note>`, `<Warning>`. Brand colors come from `docs.json`
+theme — don't hardcode hex values in page-level styles.

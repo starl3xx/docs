@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 160" width="760" height="160">
+  <defs>
+    <linearGradient id="t" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#ff5fb8"></stop>
+      <stop offset="100%" stop-color="#ff2d55"></stop>
+    </linearGradient>
+    
+  </defs>
+  <text x="20" y="118" class="word" fill="#fef2ff">filter</text>
+  <polygon points="425,40 495,40 460,108" fill="url(#t)"></polygon>
+  <text x="500" y="118" class="word" fill="#fef2ff">fun</text>
+</svg>

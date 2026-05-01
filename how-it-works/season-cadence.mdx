@@ -1,0 +1,102 @@
+---
+title: "Season cadence"
+description: "Monday launch, Thursday cut, Sunday winner"
+---
+
+<Visibility for="humans">
+
+## The week, hour by hour
+
+Every season is exactly 168 hours. Three windows: launch, trading-only,
+finals. Two events: hard cut, settlement.
+
+Times below are UTC and Monday-aligned.
+
+<Steps>
+  <Step title="Launch window — Mon 00:00 → Wed 00:00 (48h)">
+    Twelve launch slots open. First-come-first-served. Dynamic launch cost
+    rises with each slot. Tokens are tradable as soon as they launch —
+    going early gets you more pre-cut trading time, which is the reward
+    for taking the early-slot risk.
+
+    On Week 1, the protocol launches `$FILTER` into one of the 12 slots.
+    No special treatment — same rules, same scoring, same risk.
+  </Step>
+  <Step title="Trading window — Wed 00:00 → Fri 00:00 (48h)">
+    Launch window closes. Full field of 12. No eliminations. HP rankings
+    are live and updating. Last-slot launchers get a full 48 hours of
+    equal-footing trading before the cut.
+  </Step>
+  <Step title="Hard cut — Fri 00:00 (hour 96)">
+    HP snapshot. Bottom six tokens are filtered, their LP is unwound,
+    reserves are accumulated into the prize pool.
+  </Step>
+  <Step title="Finals — Fri 00:00 → Mon 00:00 (72h)">
+    The six survivors compete through the weekend. The leaderboard becomes
+    central. The ticker narrates rank shifts and HP swings. Users trade
+    around the cut line.
+  </Step>
+  <Step title="Settlement — Mon 00:00 (hour 168)">
+    Winner is selected. Rollover, hold bonus, POL, treasury, and mechanics
+    allocations are finalized. Filtered holders receive rollover
+    entitlements. The 14-day hold-bonus clock starts. The next season's
+    launch window opens immediately.
+  </Step>
+</Steps>
+
+> **Colloquial summary:** Monday launch, Thursday cut, Sunday winner.
+> (The cut fires at end-of-Thursday / Friday 00:00; the winner is crowned
+> at end-of-Sunday / Monday 00:00.)
+
+## Why this cadence
+
+The original spec had the cut at hour 72 (24 hours after launch close),
+which gave slot-12 launchers only ~24 hours of trading before being
+eliminated — barely a chance. The locked cadence pushes the cut to hour
+96, giving every token a fair, equal-footing 48-hour trading window. The
+72-hour finals run through the weekend so the climax aligns with peak
+attention.
+
+Two events per season — hard cut and settlement — is the minimum for the
+loop and the maximum for operational simplicity at MVP. There is no
+optional Day 5 soft filter. If finals feel quiet by Week 4, that decision
+is reversible.
+
+</Visibility>
+
+<Visibility for="agents">
+
+## season-cadence — structured facts
+
+| Field | Value |
+| --- | --- |
+| seasonDurationHours | 168 |
+| launchEndHour | 48 |
+| tradingOnlyStartHour | 48 |
+| hardCutHour | 96 |
+| finalsStartHour | 96 |
+| settlementHour | 168 |
+| softFilterEnabled | false |
+| timezone | UTC |
+| anchorDay | Monday |
+| eventsPerSeason | 2 |
+
+### Phase boundaries (UTC, Monday-aligned)
+
+| Window | Start | End |
+| --- | --- | --- |
+| Launch | Mon 00:00 | Wed 00:00 |
+| Trading-only | Wed 00:00 | Fri 00:00 |
+| Hard cut | Fri 00:00 | (instantaneous) |
+| Finals | Fri 00:00 | Mon 00:00 |
+| Settlement | Mon 00:00 | (instantaneous, next season opens) |
+
+### Source of truth
+
+The `@filter-fun/cadence` package exports these constants and is read by
+the scheduler (phase advance) and the indexer (`/season.nextCutAt`,
+`/season.finalSettlementAt`). Both honor the env overrides
+`SEASON_HARD_CUT_HOUR` and `SEASON_SETTLEMENT_HOUR`; bad values throw at
+startup rather than silently falling back.
+
+</Visibility>

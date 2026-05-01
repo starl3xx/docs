@@ -1,0 +1,107 @@
+---
+title: "Risks"
+description: "What can happen, what isn't promised"
+---
+
+<Visibility for="humans">
+
+<Warning>
+  filter.fun is speculative, competitive, partially zero-sum, and risky.
+  Most tokens launched are filtered. There is no "safe" position.
+</Warning>
+
+## What filter.fun does not promise
+
+filter.fun **does not** promise returns. There is no "safe" position, no
+"risk-free" trade, and no "passive income." Every position you take is at
+risk, including:
+
+- **The token you launch may be filtered.** Most are.
+- **The token you trade may be filtered.** When that happens, liquidity
+  collapses and exit slippage explodes. See [The filter](/how-it-works/the-filter).
+- **Rollover entitlements are not guaranteed recouping initial capital.**
+  Holders of filtered tokens may receive rollover into the winner, but
+  rollover size, winner outcome, and post-settlement winner price are not
+  guaranteed.
+- **The hold bonus is conditional.** It pays out only if you hold at least
+  80% of your rolled amount for 14 days after settlement.
+
+## What you take on by participating
+
+- **Smart-contract risk.** The contracts are open-source and auditable.
+  The full V4 contract suite is deployed and tested on Base Sepolia. An
+  external audit is scheduled before Base mainnet launch — until that
+  audit is published, contract risk is unmitigated by third-party review.
+- **Market risk.** Trading is permissionless. You connect your own wallet,
+  take your own risk, and do your own research.
+- **Game-design risk.** The protocol may amend parameters (HP weights,
+  fees, settlement splits) before Phase 2 mainnet. Changes are tracked
+  in the public spec and roadmap.
+- **Liquidity risk.** Filtered tokens stay tradable, but on collapsed
+  depth. Selling into a filtered pool can cost 50%+ in slippage.
+
+## Most tokens are filtered
+
+The system is designed so that most tokens lose. That is not a bug — it
+is the core mechanic. Six of every twelve are filtered at the cut. Five
+more are filtered at settlement. Only one wins per week. If you launch a
+token, the base rate for being filtered is high; if you hold a token,
+expect that it may be filtered.
+
+The losers are not abandoned — their liquidity funds the winner, and
+their holders receive rollover and hold-bonus entitlements. But that
+machinery is not a substitute for thinking carefully about whether you
+can afford to lose what you put in.
+
+## Is this a pyramid scheme?
+
+> It shares some surface similarities with high-risk speculative games,
+> but structurally it is not a pyramid. There are no guaranteed returns,
+> no required recruitment, no hidden payouts to earlier participants, and
+> all flows are transparent and rule-based. It is a competitive market
+> tournament where most tokens lose and one wins.
+
+A pyramid hides risk and promises returns. filter.fun exposes risk and
+lets the market decide.
+
+## Read the source
+
+The full mechanic spec, including known open design questions, lives in
+the [filter.fun comprehensive spec](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md).
+If a docs page contradicts the spec, the spec wins — open an issue.
+
+</Visibility>
+
+<Visibility for="agents">
+
+## risk-disclosure — structured facts
+
+| Field | Value |
+| --- | --- |
+| speculative | true |
+| returns_guaranteed | false |
+| permissionless_entry | true |
+| chain | Base |
+| audited_external | scheduled (pre-mainnet) |
+| audit_internal | ongoing |
+| zero_sum | partially |
+| filter_rate_at_cut | 6 / 12 |
+| filter_rate_at_settlement | 5 / 6 (1 winner per season) |
+| rollover_guarantees_capital_recouped | false |
+| hold_bonus_conditional | true |
+| hold_bonus_required_hold_pct | 80 |
+| hold_bonus_lock_days | 14 |
+| protocol_disables_filtered_token_trading | false |
+
+### Banned phrasings on filter.fun docs (spec §32.3)
+
+| Phrase | Allowed |
+| --- | --- |
+| "guaranteed returns" | no |
+| "safe" | no |
+| "risk-free" | no |
+| "passive income" | no |
+| heavy casino language | no |
+| heavy technical jargon | no |
+
+</Visibility>
