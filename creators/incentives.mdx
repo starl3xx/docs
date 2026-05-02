@@ -1,9 +1,17 @@
 ---
 title: "Creator incentives"
-description: "What creators earn — fees, bounty, refundable stake"
+description: "What creators earn — fees, bounty, refundable stake, ROI calculator"
 ---
 
 <Visibility for="humans">
+
+<Warning>
+  **Most tokens get filtered.** The realistic outcome of launching on
+  filter.fun is that your token does not win and your refundable stake is
+  forfeited. The scenarios on this page are hypothetical; they do **not**
+  predict outcomes for your specific token. Read the [risk disclosure](/risks/risk-disclosure)
+  before committing.
+</Warning>
 
 Creators earn from three sources. Two are upside; one is your money
 back if you survive.
@@ -107,6 +115,128 @@ Three rules prevent creators from gaming their own token:
 See [spec §10.6](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#106-anti-gaming)
 for the full anti-gaming surface.
 
+## Cost & ROI calculator
+
+The interactive calculator lives on the [`/launch`](https://filter.fun/launch)
+page (sliders + scenarios update live as you tune them). This section is
+the reference version — three pre-baked scenarios + the formulas that drive
+each output.
+
+### Static cost breakdown
+
+What you commit when you launch (slot 1, base values per [spec §4.3](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#43-launch-cost-formula)):
+
+| Component | Slot 1 | Slot 6 | Slot 12 |
+| --- | ---: | ---: | ---: |
+| Launch cost | Ξ0.0100 (~$35) | Ξ0.0125 (~$44) | Ξ0.0200 (~$70) |
+| Refundable stake | Ξ0.0100 (~$35) | Ξ0.0125 (~$44) | Ξ0.0200 (~$70) |
+| **Total committed** | Ξ0.0200 (~$70) | Ξ0.0250 (~$88) | Ξ0.0400 (~$140) |
+
+USD figures use $3,500/ETH. Stake is refunded if your token survives
+Friday's cut, forfeited otherwise. The base launch cost was reduced 5×
+on 2026-05-02 (formerly 0.05 ETH base) to lower the affordability bar.
+
+### Three scenarios
+
+The calculator on `/launch` lets you dial peak market cap, weekly trading
+volume, and outcome — these tables show the same math for three plausible
+hypotheticals. All numbers assume slot 1 cost (Ξ0.0100) and stake mode on.
+
+#### Realistic launch — token gets filtered
+
+The most likely outcome. Token doesn't make the top 6, stake is forfeited,
+fees only accrue until Friday's cut.
+
+| Input | Value |
+| --- | ---: |
+| Peak market cap | $50,000 |
+| Weekly trading volume | $100,000 |
+| Outcome | Filtered (bottom 6) |
+
+| Output | Value |
+| --- | ---: |
+| Slot cost paid | $35 |
+| Stake forfeited | $35 |
+| Creator fees (½ week) | $100 |
+| Champion bounty | — |
+| **Net out-of-pocket** | **−$30 (small profit on fees)** |
+| Breakeven volume | $17,500 |
+
+Even in the realistic-loss case, fees can cover the launch cost if your
+token traded enough before getting cut.
+
+#### Solid token — survives the cut, doesn't win
+
+Decent traction. Token makes top 6 at the cut, full week of fees, stake
+refunded.
+
+| Input | Value |
+| --- | ---: |
+| Peak market cap | $500,000 |
+| Weekly trading volume | $1,000,000 |
+| Outcome | Survives cut (top 6, not winner) |
+
+| Output | Value |
+| --- | ---: |
+| Slot cost paid | $35 |
+| Stake refunded | +$35 |
+| Creator fees (full week) | $2,000 |
+| Champion bounty | — |
+| **Net out-of-pocket** | **−$1,965 (net profit on fees)** |
+| Breakeven volume | $17,500 |
+
+#### Viral winner — wins the week
+
+The dream. Full week of fees, stake refunded, champion bounty paid, your
+token's pool gets permanent POL backing forever.
+
+| Input | Value |
+| --- | ---: |
+| Peak market cap | $5,000,000 |
+| Weekly trading volume | $10,000,000 |
+| Outcome | Wins week |
+
+| Output | Value |
+| --- | ---: |
+| Slot cost paid | $35 |
+| Stake refunded | +$35 |
+| Creator fees (full week) | $20,000 |
+| Champion bounty (range) | $6,250 – $25,000 |
+| POL backing | ~Ξ17.857 locked LP forever |
+| **Net out-of-pocket** | **−$35,590 (net profit, midpoint)** |
+| Breakeven volume | $17,500 |
+
+The bounty is a range because losers-pot size depends on how much LP
+the bottom-6 tokens contributed — that field-size variance is real and
+the calculator surfaces it as ±4× to keep expectations honest.
+
+### Formulas
+
+The same formulas drive both the docs scenarios and the live calculator
+on `/launch`:
+
+```text
+slot_cost           = BASE_LAUNCH_COST × (1 + (slotIndex / 12)²)
+                      where BASE_LAUNCH_COST = 0.01 ETH
+creator_fees_week   = weekly_volume × 0.0020         (full week)
+                    = weekly_volume × 0.0010         (filtered, half-week)
+losers_pot_estimate = peak_mc × 0.05  (low)  → peak_mc × 0.20  (high)
+champion_bounty     = losers_pot × 0.025
+pol_backing         = losers_pot × 0.10
+breakeven_volume    = slot_cost / 0.0020
+net_out_of_pocket   = slot_cost
+                    + (filtered ? stake : 0)
+                    − creator_fees_week
+                    − (wins ? champion_bounty_midpoint : 0)
+```
+
+What this is **not**:
+
+- Not a financial promise. Every output depends on inputs you supply.
+- Not investment advice. Read the [risk disclosure](/risks/risk-disclosure).
+- Not a "you will profit" page. The realistic-launch preset is intentionally
+  a loss case because most launches are filtered.
+
 ## Next
 
 <CardGroup cols={2}>
@@ -191,5 +321,60 @@ Window resolution is the **earliest** of the three.
 | Quiet week | Ξ4 | Ξ0.10 |
 | Average week | Ξ20 | Ξ0.50 |
 | Viral week | Ξ40 | Ξ1.00 |
+
+### Cost / ROI calculator (spec §45)
+
+| Constant | Value | Notes |
+| --- | ---: | --- |
+| `BASE_LAUNCH_COST` | 0.01 ETH | spec §4.3, locked 2026-05-02 |
+| `MAX_LAUNCHES` | 12 | per-week slot cap |
+| `CREATOR_FEE_BPS` | 20 | 0.20% of trading volume |
+| `CHAMPION_BOUNTY_BPS` | 250 | 2.5% of losers pot |
+| `POL_SLICE_BPS` | 1000 | 10% of losers pot → permanent LP |
+| `ETH_USD_FALLBACK` | 3500 | hardcoded fallback for v1; live feed planned |
+
+#### Slot cost formula
+
+```text
+slotCost(i) = BASE_LAUNCH_COST × (1 + (i / 12)²)
+```
+
+| Slot | Multiplier | Cost (ETH) | Cost (USD @ $3500) |
+| ---: | ---: | ---: | ---: |
+| 1 | 1.000× | 0.0100 | $35 |
+| 6 | 1.174× | 0.0117 | $41 |
+| 12 | 1.840× | 0.0184 | $64 |
+
+(Slot indices are 0-based on chain; this table is 1-based for display
+parity with the launch page.)
+
+#### Calculator outputs
+
+```json
+{
+  "creatorFeesUsd": "weeklyVolumeUsd × 0.0020 × (filtered ? 0.5 : 1)",
+  "bountyRangeUsd": {
+    "low": "peakMcUsd × 0.05 × 0.025",
+    "high": "peakMcUsd × 0.20 × 0.025"
+  },
+  "polBackingEth": "((peakMcUsd × 0.125) × 0.10) / ethUsd",
+  "breakevenVolumeUsd": "slotCostUsd / 0.0020",
+  "netUsd": "slotCostUsd + (filtered ? stakeUsd : 0) - creatorFeesUsd - (wins ? bountyMidpointUsd : 0)"
+}
+```
+
+#### Pre-baked scenarios
+
+| Scenario | Peak MC | Weekly volume | Outcome |
+| --- | ---: | ---: | --- |
+| Realistic launch | $50,000 | $100,000 | filtered |
+| Solid token | $500,000 | $1,000,000 | survives cut |
+| Viral winner | $5,000,000 | $10,000,000 | wins week |
+
+#### Risk-disclosure rule
+
+The string "**Most tokens get filtered.**" is required, non-removable copy
+on every surface that renders the calculator (web `/launch` and this
+docs page). See spec §45.5.
 
 </Visibility>
