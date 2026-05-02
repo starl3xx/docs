@@ -15,6 +15,23 @@ below is also valid; filter.fun rules take precedence on conflict.
   is canonical. Colors come from `palette.json`; do not introduce non-brand
   colors in MDX styling.
 
+## Canonical URLs
+
+filter.fun runs three subdomains under one apex:
+
+| Surface | Host | What lives here |
+| --- | --- | --- |
+| Web app | `https://filter.fun` | Arena gameplay (the dApp). Not a marketing landing. |
+| Docs | `https://docs.filter.fun` | This site. Marketing/explainer + reference. |
+| Indexer API | `https://api.filter.fun` | `/season`, `/tokens`, `/events`, `/profile/:address`. |
+
+Rules:
+
+- **Never link to `filterfun.mintlify.app` or `*.up.railway.app` in published docs.** Those are deployment-internal and rotate. Use the canonical hosts above.
+- **Internal cross-links use site-relative paths** (`/how-it-works/the-filter`), not absolute URLs to `docs.filter.fun`. Absolute `https://docs.filter.fun` URLs only appear inside `<Visibility for="agents">` blocks where they're being **declared** as canonical-URL facts for AI clients to consume — never as cross-links.
+- **MCP server URL is `https://docs.filter.fun/mcp`** — that's what the contextual toolbar's `add-mcp` option installs.
+- **filter.fun root resolves to the web app**, not a marketing landing. Marketing/explainer content lives here on docs.
+
 ## The mark
 
 The mark is **▼** (U+25BC, BLACK DOWN-POINTING TRIANGLE), **not** 🔻 (the
