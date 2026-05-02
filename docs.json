@@ -58,6 +58,14 @@
         ]
       },
       {
+        "group": "Security",
+        "pages": [
+          "security/settlement",
+          "security/threat-model",
+          "security/audit-status"
+        ]
+      },
+      {
         "group": "For operators",
         "pages": [
           "operators/sepolia-smoke",
