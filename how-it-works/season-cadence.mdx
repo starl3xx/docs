@@ -50,17 +50,13 @@ Times below are UTC and Monday-aligned.
 
 ## Why this cadence
 
-The original spec had the cut at hour 72 (24 hours after launch close),
-which gave slot-12 launchers only ~24 hours of trading before being
-eliminated — barely a chance. The locked cadence pushes the cut to hour
-96, giving every token a fair, equal-footing 48-hour trading window. The
-72-hour finals run through the weekend so the climax aligns with peak
-attention.
+The cut at hour 96 gives every token an equal-footing 48-hour
+trading window before elimination — including the slot-12 launcher
+who closed the launch window. The 72-hour finals run through the
+weekend so the climax aligns with peak attention.
 
-Two events per season — hard cut and settlement — is the minimum for the
-loop and the maximum for operational simplicity at MVP. There is no
-optional Day 5 soft filter. If finals feel quiet by Week 4, that decision
-is reversible.
+Two events per season — hard cut and settlement — is the minimum
+for the loop and the maximum for operational simplicity early on.
 
 </Visibility>
 
@@ -93,10 +89,8 @@ is reversible.
 
 ### Source of truth
 
-The `@filter-fun/cadence` package exports these constants and is read by
-the scheduler (phase advance) and the indexer (`/season.nextCutAt`,
-`/season.finalSettlementAt`). Both honor the env overrides
-`SEASON_HARD_CUT_HOUR` and `SEASON_SETTLEMENT_HOUR`; bad values throw at
-startup rather than silently falling back.
+The scheduler advances phases against these constants, and the
+indexer surfaces the same anchors at `/season.nextCutAt` and
+`/season.finalSettlementAt`.
 
 </Visibility>

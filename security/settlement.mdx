@@ -88,21 +88,29 @@ contract, and every contract has invariants. Below is what's enforced.
 
 You don't have to take filter.fun's word for it.
 
-- **The contracts:** [`starl3xx/filter-fun`](https://github.com/starl3xx/filter-fun) — open-source Solidity. Settlement pipeline lives in `packages/contracts/src/`: `SeasonVault`, `POLManager`, `BonusDistributor`, `TournamentVault`, `CreatorCommitments`.
-- **The invariant suite:** [PR #50 on filter-fun](https://github.com/starl3xx/filter-fun/pull/50) — the Foundry test suite that codifies all eight invariants and runs in CI on every change. Failures block merge.
-- **The deployed Sepolia addresses:** tracked in `packages/contracts/deployments/base-sepolia.json` in the contracts repo. Mainnet addresses will appear here once Phase 2 launches.
-- **The smoke runbook:** [Sepolia smoke-test](/operators/sepolia-smoke) — end-to-end exercise of one season including settlement and claim, with verifiable cast commands at every step.
+- **The contracts** are open-source Solidity. The settlement
+  pipeline lives in `SeasonVault`, `POLManager`, `BonusDistributor`,
+  `TournamentVault`, `CreatorCommitments`.
+- **The invariant suite** is a Foundry test suite that codifies all
+  eight invariants and runs in CI on every change. Failures block
+  merge.
+- **The deployed Sepolia addresses** ship in the contracts repo's
+  deployment manifest. Mainnet addresses will appear there once
+  mainnet launches.
+- **The smoke runbook** ([Sepolia smoke-test](/operators/sepolia-smoke))
+  exercises one season end-to-end including settlement and claim,
+  with verifiable cast commands at every step.
 
 ## Voluntary disclosure window
 
 Found something? We want to know.
 
 <Note>
-  filter.fun does **not** currently run a paid bug bounty program. This is
-  a voluntary disclosure window — your contribution is recognized but not
-  financially compensated. A formal bounty program is expected to launch
-  post-mainnet via a specialized platform (Immunefi or similar) once the
-  treasury and legal framework are in place.
+  filter.fun does **not** currently run a paid bug bounty program.
+  This is a voluntary disclosure window — your contribution is
+  recognized but not financially compensated. A formal bounty
+  program is planned post-mainnet via a specialized platform once
+  the treasury and legal framework are in place.
 </Note>
 
 **Pre-audit voluntary review window:** the contracts are open for
@@ -119,8 +127,8 @@ begins. Submit findings to the address below.
   credit on this page
 - **Scope:** the settlement pipeline contracts (`SeasonVault`,
   `POLManager`, `BonusDistributor`, `TournamentVault`,
-  `CreatorCommitments`), plus the bag-lock contract from PR #43, plus
-  any contract under `packages/contracts/src/` deployed in the manifest
+  `CreatorCommitments`), plus the bag-lock contract, plus any
+  contract deployed in the manifest
 - **Out of scope:** the indexer, the web app, third-party dependencies
   (V4 PoolManager, WETH9), social-engineering, denial-of-service against
   RPC providers
@@ -172,25 +180,25 @@ review beats automated tests.
 
 Sum check: 4500 + 2500 + 1000 + 1000 + 1000 = 10000 BPS of `remaining`.
 
-### Settlement contracts (spec §25)
+### Settlement contracts
 
-| Contract | Per-season? | Source path |
-| --- | --- | --- |
-| SeasonVault | yes (one per season) | `packages/contracts/src/SeasonVault.sol` |
-| SeasonPOLReserve | yes | `packages/contracts/src/SeasonPOLReserve.sol` |
-| POLManager | no (singleton) | `packages/contracts/src/POLManager.sol` |
-| POLVault | no (singleton) | `packages/contracts/src/POLVault.sol` |
-| BonusDistributor | no (singleton) | `packages/contracts/src/BonusDistributor.sol` |
-| TournamentVault | no (singleton) | `packages/contracts/src/TournamentVault.sol` |
-| CreatorCommitments | no (singleton) | `packages/contracts/src/CreatorCommitments.sol` |
-| TreasuryTimelock | no (singleton) | `packages/contracts/src/TreasuryTimelock.sol` |
+| Contract | Per-season? |
+| --- | --- |
+| SeasonVault | yes (one per season) |
+| SeasonPOLReserve | yes |
+| POLManager | no (singleton) |
+| POLVault | no (singleton) |
+| BonusDistributor | no (singleton) |
+| TournamentVault | no (singleton) |
+| CreatorCommitments | no (singleton) |
+| TreasuryTimelock | no (singleton) |
 
 ### Deployed addresses
 
-| Network | Status | Source of truth |
-| --- | --- | --- |
-| Base Sepolia (84532) | Active testnet deploy | `packages/contracts/deployments/base-sepolia.json` in [`starl3xx/filter-fun`](https://github.com/starl3xx/filter-fun) |
-| Base mainnet (8453) | Not yet deployed; gated on §42.5 checklist | will appear at `packages/contracts/deployments/base.json` post-launch |
+| Network | Status |
+| --- | --- |
+| Base Sepolia (84532) | Active testnet deploy; addresses ship in the contracts repo's manifest |
+| Base mainnet (8453) | Not yet deployed; gated on the activation checklist |
 
 ### Voluntary disclosure
 
@@ -211,8 +219,8 @@ Sum check: 4500 + 2500 + 1000 + 1000 + 1000 = 10000 BPS of `remaining`.
 | Category | Status |
 | --- | --- |
 | Settlement pipeline contracts | in_scope |
-| Bag-lock contract (PR #43) | in_scope |
-| Any contract under `packages/contracts/src/` in deploy manifest | in_scope |
+| Bag-lock contract | in_scope |
+| Any contract in the deployment manifest | in_scope |
 | Indexer | out_of_scope |
 | Web app | out_of_scope |
 | V4 PoolManager / WETH9 | out_of_scope (third-party) |
@@ -223,10 +231,6 @@ Sum check: 4500 + 2500 + 1000 + 1000 + 1000 = 10000 BPS of `remaining`.
 
 | Resource | URL |
 | --- | --- |
-| Invariant test suite PR | https://github.com/starl3xx/filter-fun/pull/50 |
-| Spec §11 — Settlement distribution | https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#11-settlement-distribution |
-| Spec §13 — POL philosophy | https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#13-pol-philosophy--use |
-| Spec §42 — Settlement security guarantees | https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#42-settlement-security-guarantees |
 | Sepolia smoke runbook | https://docs.filter.fun/operators/sepolia-smoke |
 | Threat model | https://docs.filter.fun/security/threat-model |
 | Audit status | https://docs.filter.fun/security/audit-status |

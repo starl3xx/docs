@@ -7,14 +7,14 @@ description: "Pre-audit phase, voluntary disclosure, formal audit timeline, and 
 
 filter.fun publishes its audit posture in public. This page is the
 canonical timeline — it updates as the audit progresses, and it doubles
-as the gate the team is using to decide when Phase 2 mainnet activation
+as the gate the team is using to decide when mainnet activation
 is allowed.
 
 ## Current phase: pre-audit
 
 | Item | Status |
 | --- | --- |
-| Foundry invariant test suite | ✅ Shipped — see [PR #50](https://github.com/starl3xx/filter-fun/pull/50) |
+| Foundry invariant test suite | ✅ Shipped |
 | Public sankey diagram + invariant explainer | ✅ Shipped — see [Settlement security guarantees](/security/settlement) |
 | Threat model published | ✅ Shipped — see [Threat model](/security/threat-model) |
 | Voluntary disclosure window | ▼ Open (14 days from publish date) |
@@ -36,32 +36,32 @@ report.
 
 ## Formal audit
 
-The Phase 2 audit will cover the full contract suite as deployed on
-Sepolia, plus the bag-lock contract (PR #43). The auditor will receive
-the public-review history (this page + any disclosure-window findings)
-as input.
+The audit will cover the full contract suite as deployed on
+Sepolia, plus the bag-lock contract. The auditor will receive
+the public-review history (this page + any disclosure-window
+findings) as input.
 
 | Field | Value |
 | --- | --- |
 | Audit firm | TBD (engagement in progress) |
-| Scope | Full `packages/contracts/src/` deployed in manifest, plus bag-lock contract |
+| Scope | Full settlement contract suite deployed in the manifest, plus bag-lock contract |
 | Timeline | TBD; pinned once firm is engaged |
 | Report publication | Public, on this page, after remediation |
 
 ## Mainnet activation gate
 
-filter.fun does **not** activate Base mainnet on a calendar date. It
-activates when this checklist completes. Per spec §42.5:
+filter.fun does **not** activate Base mainnet on a calendar date.
+It activates when this checklist completes:
 
 - [x] Foundry invariant test suite shipped and passing
-- [x] Public sankey diagram + invariant explainer at docs.filter.fun
+- [x] Public sankey diagram + invariant explainer
 - [ ] 2-week public review window completed
 - [ ] All public-review findings addressed or explicitly accepted-as-design
 - [ ] Formal audit complete with public report
 - [ ] All critical / high audit findings resolved
-- [ ] Bag-lock contract (PR #43) covered in same audit
+- [ ] Bag-lock contract covered in same audit
 - [ ] Multi-sig on TreasuryTimelock + POLVault confirmed
-- [ ] Operator runbook §8 smoke procedure executed cleanly on Sepolia at least once
+- [ ] Sepolia smoke runbook executed cleanly at least once
 
 Until every box is checked, mainnet contract activity is not authorized.
 This is a published commitment, not an internal preference.
@@ -89,7 +89,6 @@ severity, status, and resolution.
 | Item | Status |
 | --- | --- |
 | invariant_test_suite | shipped |
-| invariant_test_suite_pr | https://github.com/starl3xx/filter-fun/pull/50 |
 | public_explainer | shipped |
 | threat_model_published | shipped |
 | voluntary_disclosure_window | open |
@@ -100,13 +99,12 @@ severity, status, and resolution.
 | formal_audit_started | false |
 | audit_report_published | false |
 
-### Mainnet activation checklist (spec §42.5)
+### Mainnet activation checklist
 
 ```
 mainnet_gate:
   - id: invariant_suite_shipped
     status: complete
-    ref: https://github.com/starl3xx/filter-fun/pull/50
   - id: public_explainer_shipped
     status: complete
     ref: https://docs.filter.fun/security/settlement
@@ -120,7 +118,6 @@ mainnet_gate:
     status: pending
   - id: bag_lock_contract_in_audit_scope
     status: pending
-    ref: https://github.com/starl3xx/filter-fun/pull/43
   - id: multisig_on_treasury_and_pol_vault_confirmed
     status: pending
   - id: sepolia_smoke_runbook_executed_cleanly
@@ -140,8 +137,6 @@ mainnet_activation_gated_on: checklist (not calendar date)
 
 | Resource | URL |
 | --- | --- |
-| Spec §42.4 — Pre-audit public review process | https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#424-pre-audit-public-review-process |
-| Spec §42.5 — Pre-mainnet checklist | https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#425-pre-mainnet-checklist |
 | Settlement security page | https://docs.filter.fun/security/settlement |
 | Threat model | https://docs.filter.fun/security/threat-model |
 | Sepolia smoke runbook | https://docs.filter.fun/operators/sepolia-smoke |

@@ -4,10 +4,9 @@ description: "Opt-in on-chain time-lock on the creator's own holdings"
 ---
 
 <Warning>
-**Mainnet activation is gated on the [Epic 2.3 audit](https://github.com/starl3xx/filter-fun/blob/main/ROADMAP.md#epic-23--audit--external-review).**
-Contracts are live on Base Sepolia for testnet UX validation. Do not
-yet rely on bag-lock semantics on mainnet — until the audit clears,
-bag-lock is testnet-only.
+**Mainnet activation is gated on the external audit.** Contracts
+are live on Base Sepolia for testnet UX validation. Until the audit
+clears, bag-lock is testnet-only.
 </Warning>
 
 <Visibility for="humans">
@@ -30,21 +29,16 @@ that gradient. A locked creator's commitment is a **public, on-chain
 fact**, readable by any block explorer, with no escape hatch and no
 unlock function.
 
-The product implication is simple: bag-locked tokens get a badge on the
-Arena leaderboard. Holders trade tokens with badges; creators who refuse
-to lock signal exactly that. The badge becomes table stakes for serious
-launches over time.
-
-See [spec §38.5](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#385-differentiators-edge-beyond-clanker)
-and [§38.8](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#388-bag-lock--why-its-the-killer-feature)
-for the strategic framing.
+The product implication is simple: bag-locked tokens get a badge
+on the Arena leaderboard. Holders trade tokens with badges;
+creators who refuse to lock signal exactly that. The badge becomes
+table stakes for serious launches over time.
 
 ## How to use it
 
-The contracts shipped to Base Sepolia in [PR #43](https://github.com/starl3xx/filter-fun/pull/43);
-the [creator console](/creators/admin-console) UI wrap is on its way as
-the Epic 1.13-web follow-up. Until then, lock from the contract directly
-on Sepolia:
+The contracts are live on Base Sepolia. The
+[creator console](/creators/admin-console) UI wrap is coming. Until
+then, lock from the contract directly on Sepolia:
 
 ```sh
 # unlockUntil is a unix timestamp; the block must be strictly later
@@ -137,19 +131,13 @@ The implication: creators must be told this **before** they commit. The
 "Lock my bag" flow surfaces an acknowledgement: *"If you lose this
 wallet, your tokens stay locked forever. You cannot recover them."*
 
-### 5. Pre-1.13 tokens (Sepolia legacy)
+### 5. Legacy Sepolia tokens
 
-Tokens deployed **before** the Epic 1.13 FilterFactory redeploy do not
-consult the commitments contract. The gating code isn't in their
-bytecode. A creator of a pre-1.13 Sepolia token who calls `commit` will
-see it succeed (the contract doesn't know about the token's bytecode),
-but the lock will not enforce — transfers from their address will still
-go through.
-
-The operational implication: until the Sepolia FilterFactory is
-redeployed and old tokens are wound down or migrated, bag-lock is not
-advertised for pre-1.13 tokens. The Sepolia README and the in-app
-badge logic explicitly exclude them.
+Tokens deployed before the bag-lock-aware FilterFactory was wired
+up don't consult the commitments contract. A creator of one of
+those tokens who calls `commit` will see it succeed, but the lock
+won't enforce — transfers will still go through. Bag-lock is not
+advertised for those tokens; the in-app badge logic excludes them.
 
 ## Locks extend, never shorten
 
@@ -173,9 +161,8 @@ it exist.
 
 ## Audit constraints
 
-Mainnet activation is gated on
-[Epic 2.3](https://github.com/starl3xx/filter-fun/blob/main/ROADMAP.md#epic-23--audit--external-review).
-The audit specifically validates:
+Mainnet activation is gated on the external audit, which
+specifically validates:
 
 - **No way to shorten or cancel a lock.** `commit` enforces strict-`>`
   monotonicity; no other state-mutating function exists on
@@ -199,8 +186,7 @@ mainnet activation is gated.
 
 <CardGroup cols={2}>
   <Card title="Creator console" icon="gauge" href="/creators/admin-console">
-    Where the bag-lock UI will live once the Epic 1.13-web follow-up
-    ships.
+    Where the bag-lock UI will live once shipped.
   </Card>
   <Card title="Launch a token" icon="rocket" href="/creators/launch-a-token">
     The launch flow that establishes the creator-of-record bag-lock
@@ -226,8 +212,8 @@ mainnet activation is gated.
 | contract | `CreatorCommitments` |
 | auth_field | `CreatorRegistry.creatorOf(token)` |
 | admin_can_commit | false (admin transfers do not carry bag-lock right) |
-| mainnet_status | **BLOCKED until Epic 2.3 audit** |
-| testnet_status | live on Base Sepolia (PR [#43](https://github.com/starl3xx/filter-fun/pull/43)) |
+| mainnet_status | **BLOCKED until audit** |
+| testnet_status | live on Base Sepolia |
 | transfer_gate_location | `FilterToken._update` (OZ v5 universal balance funnel) |
 | transfer_gate_scope | from-side (locked address cannot send; receiving is allowed) |
 | pre_lock_transfer_escape | true (intentional, advertised) |
@@ -276,21 +262,14 @@ mainnet activation is gated.
 | Inbound transfers still allowed | by design — fee claims must work |
 | Sibling wallets not covered | UI surfaces creator's clustered activity |
 | Lost keys = permanent lock | UI requires acknowledgment before commit |
-| Pre-1.13 tokens not gated | UI excludes them from bag-lock badge |
+| Legacy tokens not gated | UI excludes them from bag-lock badge |
 
-### Audit checklist (Epic 2.3)
+### Audit checklist
 
 - No shorten / no cancel
 - No admin override
-- Gate consulted in `_update` (covers `transfer`, `transferFrom`, swap-routing, burn)
+- Gate consulted on every balance change (`transfer`, `transferFrom`, swap-routing, burn)
 - Auth uses `creatorOf`, not `adminOf`
 - Reentrancy guard on `commit`
-
-### See also
-
-- [`CreatorCommitments.sol`](https://github.com/starl3xx/filter-fun/blob/main/packages/contracts/src/CreatorCommitments.sol)
-- [`FilterToken.sol`](https://github.com/starl3xx/filter-fun/blob/main/packages/contracts/src/FilterToken.sol) (the gate)
-- [`CreatorCommitments.t.sol`](https://github.com/starl3xx/filter-fun/blob/main/packages/contracts/test/CreatorCommitments.t.sol) (coverage)
-- spec [§38.5](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#385-differentiators-edge-beyond-clanker), [§38.6](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#386-on-chain-primitives-required), [§38.7](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#387-out-of-scope-v2--future), [§38.8](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#388-bag-lock--why-its-the-killer-feature)
 
 </Visibility>

@@ -45,11 +45,10 @@ The creator-fee window closes at the **earliest** of:
 - the token is filtered (cut at hour 96 or settlement at hour 168)
 - final settlement of the season
 
-Tokens that make finals can keep accruing creator fees through the
-finals phase; the window closes at settlement. After that, the
-long-tail-trading fees route through the standard fee splits but the
-creator slice is no longer credited. (Long-tail policy is tracked in
-[spec §10.3](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#103-creator-fee-window).)
+Tokens that make finals can keep accruing creator fees through
+the finals phase; the window closes at settlement. After that,
+long-tail trading fees route through the standard fee splits but
+the creator slice is no longer credited.
 
 ## 2.5% champion bounty
 
@@ -100,12 +99,9 @@ Three rules prevent creators from gaming their own token:
 - **Creator fees do not affect HP.** The 0.20% creator slice is paid
   out of the pool but isn't visible to the HP engine. You can't pump
   HP by trading your own token.
-- **Optional payout cap.** A configurable per-token max on creator fees
-  is available at deploy time. Default is uncapped; if turned on, the
-  contract refuses claims past the cap.
-
-See [spec §10.6](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#106-anti-gaming)
-for the full anti-gaming surface.
+- **Optional payout cap.** A configurable per-token max on creator
+  fees is available at deploy time. Default is uncapped; if turned
+  on, the contract refuses claims past the cap.
 
 ## Next
 

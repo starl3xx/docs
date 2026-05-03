@@ -11,29 +11,29 @@ A threat model is what attackers might *try* against the contracts, and
 what the contracts do to refuse them.
 
 The pipeline assumes attackers are adversarial, well-funded, and
-patient. The defenses below are not "we trust people not to do this" —
-they are enforced at the contract level, with [Foundry invariant tests](https://github.com/starl3xx/filter-fun/pull/50)
-proving they hold.
+patient. The defenses below are not "we trust people not to do
+this" — they are enforced at the contract level, with Foundry
+invariant tests proving they hold.
 
 ## Adversaries
 
 | Adversary | What they try | How the contracts refuse |
 | --- | --- | --- |
-| **Whale manipulator** | Influence filter outcome via late-stage HP gaming or coordinated buys at the cut | HP component math (spec §6.4) limits velocity dominance; concentration component (spec §41) penalizes buys-from-few-addresses; multi-component scoring resists single-vector attacks |
+| **Whale manipulator** | Influence filter outcome via late-stage HP gaming or coordinated buys at the cut | HP component math limits velocity dominance; concentration component penalizes buys-from-few-addresses; multi-component scoring resists single-vector attacks |
 | **Settlement front-runner** | Insert transactions between filter and settlement to extract value (MEV-style sandwich on POL deployment) | Settlement is atomic and oracle-only; POL deployment runs inside the same transaction as `submitWinner`; deterministic execution paths leave no value to extract |
 | **Reentrancy attacker** | Re-enter state-mutating functions during external calls (e.g., transfer hooks calling back into the pipeline) | `ReentrancyGuard` on every state-mutating function in SeasonVault, TournamentVault, BonusDistributor, POLManager, CreatorRegistry; fuzzed against malicious receivers |
 | **Merkle proof gamer** | Claim rollover or bonus they didn't earn, or claim more than once | Merkle root is immutable post-publish; proof verification at claim time; per-claim nullifier prevents replay |
 | **Oracle impersonator** | Submit settlement as a non-oracle address | `msg.sender` checked against immutable oracle address at function entry; no upgrade mechanism replaces the oracle without explicit governance action |
 | **Storage corrupter** | Set contract state to malicious values via misuse of admin functions (e.g., zero-address oracle, out-of-range BPS) | Input validation on every admin setter; zero-address rejection; out-of-range values reject; one-shot setters for critical wires (factory ↔ hook ↔ launcher) |
-| **Dust exploiter** | Extract value via rounding errors in division | Explicit dust accounting: rounding routes to treasury per spec §11; never disappears; never accumulates in an unaccounted contract balance |
+| **Dust exploiter** | Extract value via rounding errors in division | Explicit dust accounting: rounding routes to treasury; never disappears; never accumulates in an unaccounted contract balance |
 
 ## Why these seven
 
-The list mirrors spec §42.1 and reflects the categories of attack the
-contracts are *designed* to refuse — meaning each one has named code
-paths and named tests. It is not a complete enumeration of every
-possible attack on a smart-contract system. It is the set the team has
-modeled explicitly and built defenses for.
+These are the categories of attack the contracts are *designed*
+to refuse — each one has named code paths and named tests. It is
+not a complete enumeration of every possible attack on a
+smart-contract system. It is the set the team has modeled
+explicitly and built defenses for.
 
 If you find an attack that doesn't fit one of these seven categories,
 that's exactly the kind of finding the [voluntary disclosure window](/security/settlement)
@@ -46,9 +46,9 @@ exists to surface.
   failure modes matter, but they are not what the settlement contracts
   defend against.
 - **Economic attacks at the game-design layer** — wash trading,
-  reflexive HP feedback loops, coordinated whale strategies. These are
-  game-theory questions covered in spec §16.6 and the HP component
-  design, not the contract threat model.
+  reflexive HP feedback loops, coordinated whale strategies. These
+  are game-theory questions covered by HP component design, not
+  the contract threat model.
 - **Third-party dependencies** — Uniswap V4 PoolManager, WETH9.
   filter.fun inherits their threat models without re-stating them here.
 
@@ -66,43 +66,36 @@ adversaries:
     target: filter_outcome
     vector: late_stage_hp_gaming
     defense: hp_component_math + concentration_component
-    spec_ref: §6.4, §41
 
   - id: settlement_front_runner
     target: pol_deployment_value
     vector: mev_sandwich
     defense: atomic_settlement + oracle_only + deterministic_execution
-    spec_ref: §42.1.2
 
   - id: reentrancy_attacker
     target: state_mutating_functions
     vector: external_call_callback
     defense: reentrancy_guard_on_all_state_mutations
-    spec_ref: §42.1.3, §42.2 invariant 5
 
   - id: merkle_proof_gamer
     target: rollover_or_bonus_claims
     vector: forged_or_replayed_proof
     defense: root_immutable + proof_verify + per_claim_nullifier
-    spec_ref: §42.1.4, §42.2 invariant 4
 
   - id: oracle_impersonator
     target: settlement_submission
     vector: msg_sender_spoof
     defense: immutable_oracle_address + no_upgrade_path
-    spec_ref: §42.1.5, §42.2 invariant 6
 
   - id: storage_corrupter
     target: contract_state
     vector: admin_setter_misuse
     defense: input_validation + zero_address_reject + bps_range_reject + one_shot_setters
-    spec_ref: §42.1.6
 
   - id: dust_exploiter
     target: rounding_residual
     vector: integer_division_extraction
     defense: dust_routes_to_treasury
-    spec_ref: §42.1.7, §42.2 invariant 8
 ```
 
 ### Out of scope for the on-chain threat model
@@ -113,17 +106,13 @@ adversaries:
 | Oracle (operator process) | Off-chain; oracle authority boundary is on-chain |
 | Web app | Off-chain; presentation layer |
 | Third-party (V4 PoolManager, WETH9) | Inherited; not re-stated |
-| Wash trading | Game-design / scoring concern (spec §16.6), not contract threat |
+| Wash trading | Game-design / scoring concern, not contract threat |
 | Coordinated whale strategy | Game-theory concern, not contract threat |
 
 ### References
 
 | Resource | URL |
 | --- | --- |
-| Spec §42.1 — threat model source | https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#421-threat-model |
-| Spec §6.4 — HP component math | https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#64-component-definitions |
-| Spec §41 — Holder concentration | https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#41-holder-concentration-as-hp-component |
-| Invariant test suite PR | https://github.com/starl3xx/filter-fun/pull/50 |
 | Settlement security page | https://docs.filter.fun/security/settlement |
 | Audit status page | https://docs.filter.fun/security/audit-status |
 
