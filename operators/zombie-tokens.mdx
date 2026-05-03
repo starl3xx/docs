@@ -5,7 +5,7 @@ description: "Tradability after filter — policy + enforcement"
 
 <Visibility for="humans">
 
-**Status:** policy locked 2026-04-30 (spec §36.1.2)
+**Status:** policy locked 2026-04-30.
 
 ## Policy
 
@@ -39,8 +39,8 @@ Three reasons. None alone would be decisive; together they are.
    they're free money for the treasury at zero ongoing cost — it would be
    perverse to design those fees away.
 
-3. **Emergent narratives.** A filtered token that organically revives is
-   its own story — the kind of thing a long-tail-winner page (Phase 3)
+3. **Emergent narratives.** A filtered token that organically revives
+   is its own story — the kind of thing a long-tail-winner surface
    gets to celebrate. Locking the door at filter time would foreclose
    this.
 
@@ -64,8 +64,8 @@ the genesis contracts:
   (`liquidate(loser)`) calls back into V4 to remove the protocol-bonded
   LP only.
 
-If a future PR adds a code path that would disable trading on a filtered
-pool, treat it as a P0 contract bug under spec §36.1.2.
+If a future change adds a code path that would disable trading on
+a filtered pool, treat it as a P0 contract bug.
 
 ## Operator guidance
 
@@ -81,13 +81,11 @@ When fielding "the token I bought got filtered, what happened?" questions:
 
 ## Related
 
-- Spec §36.1.2 — zombie-tradability policy
-- Spec §3.2 — recommended season timeline
-- Spec §36.1.5 — filter timing explicit cadence
-- `packages/cadence/` — single source of truth for filter cadence (when
-  the cut happens)
-- Future: long-tail-winner page (Phase 3) will surface revived zombies
-  as standalone stories.
+- [Season cadence](/how-it-works/season-cadence) — when the cut fires
+- [The filter](/how-it-works/the-filter) — what filtering means
+
+A long-tail-winner surface that celebrates revived zombies as
+standalone stories is planned.
 
 </Visibility>
 

@@ -1,350 +1,141 @@
 ---
 title: "HP methodology"
-description: "How the locked HP component weights were derived — empirical fit, leakage discipline, and external cross-validation"
+description: "How the HP component weights were derived"
 ---
 
 <Visibility for="humans">
 
-## Why this page exists
+HP weights aren't pulled from a hat. The values that combine six
+on-chain signals into a single score were fit against historical
+launches on Base, leakage-checked, and corroborated by published
+research on adjacent launchpads. This page is the *why*.
 
-filter.fun's HP score determines who gets filtered. The weight values
-that combine the six on-chain signals into a single number aren't
-pulled from a hat — they're empirically fit against historical token
-launches on Base, leakage-checked, and cross-validated against
-published academic research on adjacent launchpads. This page documents
-how those weights were derived, what was tried and discarded, and the
-caveats we're shipping with.
+For the active weights, see [HP scoring](/how-it-works/hp-scoring).
 
-If you came here to verify *what* is currently active, that lives at
-[`/how-it-works/hp-scoring`](/how-it-works/hp-scoring). This page is
-the *why*.
+## How the weights were derived
 
-> The summary: drop momentum from the HP composite, redistribute its
-> 10pp weight to stickyLiquidity, hold every other component at spec
-> default. Locked 2026-05-03 as `HP_WEIGHTS_VERSION = "2026-05-03-v4-locked"`.
+The empirical fit ran in four iterations across spring 2026, each
+correcting blind spots in the previous one.
 
-## The story arc — Track E v2 → v3 → v4 → validation cohort
+The first run, on a 48-token sample, established that holder
+concentration carried real predictive signal — settling whether to
+ship a sixth component at all. The second run scaled to 250 tokens
+and immediately exposed two broken inputs and three leakage flags
+where a component's input was the same field deciding its outcome
+label. The third run was the lock decision: a stratified 50/50
+sample of survivor and dead tokens (n=100). Two findings dominated
+that run:
 
-The HP weight study ran in four iterations across spring 2026, each
-correcting blind spots in the previous run. The recommendation that
-landed in the spec is the product of all four — not a single fit.
+- Momentum had no fittable signal. Regularized regression assigned
+  it 0% weight on every outcome label tested. The diagnostic showed
+  42% of survivor-half tokens had no informative delta in the
+  measurement window — the window itself was structurally too narrow
+  for the metric to fire.
+- Sticky liquidity dominated the non-leakage components. RandomForest
+  importance scored it 0.38 vs the next-highest at 0.26. The fit
+  suggested sticky liquidity should sit much higher than the prior
+  default of 20%.
 
-| Run | n | Headline finding | What changed |
-|---|---:|---|---|
-| v2 (PR #59) | 48 | First real signal; holderConcentration validated as predictive | Confirmed the 6th component is safe to ship |
-| v3 (PR #62) | 250 | Two component inputs broken; outcome leakage; momentum 98% zero | Fetcher fixes + leakage flags + momentum diagnostic dispatched |
-| v4 (PR #66) | 100 stratified | Momentum has no fittable signal; stickyLiquidity dominates non-leakage components; corroborates Marino | §6.5 weights LOCKED |
-| v4 validation (PR #76) | 7 | Pre-v4 defaults slightly out-correlate LOCKED at this n; lock held with caveat | v5 follow-up filed |
-| v5 (PR TBD) | target 50–200 | TBD — liquidity-first cohort algorithm in flight | Lock will be validated, revisited, or held inconclusive |
+The conservative read: take momentum's retired 10pp slot and give
+it to sticky liquidity. Hold every other component at default.
+That's the only weight change adopted.
 
-### v2 — the first real signal
-
-Track E v2 ran the analysis pipeline on a 48-token corpus pulled from
-Clanker V4 launches. The headline result wasn't a weight value — it was
-that `holderConcentration`, the sixth component proposed in spec §41,
-showed a real correlation with downstream token health. That settled
-the "should we even ship a 6th component" question. v2 didn't have
-enough tokens to fit reliable coefficients, but it cleared the path
-for v3.
-
-### v3 — the breakage that exposed the pipeline
-
-The v3 dispatch scaled the corpus to 250 tokens and immediately surfaced
-a series of fetcher bugs: two of the seven HP-component inputs were
-zero on >97% of tokens, the `momentum` input was structurally degraded
-(zero on 98%), and three outcome labels were leaking — i.e. the input
-that scored a component was the same field that decided the outcome
-label, producing a misleading correlation. v3 didn't lock anything;
-it produced a punch list. The leakage flags became the standard
-discipline for v4.
-
-### v4 — the lock
-
-v4 ran a stratified 50/50 survivor/dead corpus of n=100. The
-stratification matters: if you only sample tokens that survived, the
-fit can't learn what predicts survival. By forcing a balanced sample,
-v4 gave the regression and the RandomForest something real to fit.
-Two findings drove the lock:
-
-1. **Momentum had no fittable signal.** L2-regularized logistic
-   regression assigned momentum 0% weight on every outcome label
-   tested. The `hp_delta_recent` diagnostic showed 42% of survivor-half
-   tokens had no informative delta in the 72h→96h window — the
-   measurement window itself is structurally too narrow for the
-   metric to fire.
-2. **stickyLiquidity is the dominant non-leakage component.** Even
-   discounting the leakage-flagged ρ=+0.87 against `price_floor`,
-   stickyLiquidity scored RF importance 0.38 vs the next-highest
-   component (velocity) at 0.26. The empirical fit suggested stickyLiquidity
-   should sit much higher than the spec's 20%.
-
-The conservative read: take momentum's retired 10pp slot and give it
-to stickyLiquidity. That's the only weight change v4 makes.
-
-### v4 validation cohort — the asterisk
-
-The validation cohort run was meant to corroborate the lock against an
-independent slice — top tokens by current FDV, drawn from a different
-sampling algorithm than the main corpus. It came back at n=7 (a
-sampling-failure mode documented in the report; the candidate-then-FDV
-funnel is too sparse for a 765k-token population) and the resulting
-rank correlation slightly *favored pre-v4 spec defaults* over LOCKED:
-
-- LOCKED (Scenario B, momentum=0): ρ = +0.571
-- Pre-v4 defaults (momentum=10%): ρ = +0.679
-
-Neither result is significant at n=7, but the direction is enough to
-flag: momentum's drop is the most fragile of the four LOCKED weight
-changes. The report's recommendation, accepted: hold the lock for
-mainnet, file a v5 dispatch with a better cohort algorithm, and be
-ready to revisit if v5 corroborates the validation cohort.
-
-### v5 — what's coming
-
-The v5 dispatch swaps the candidate-then-FDV-sample funnel for a
-liquidity-first scan: walk PoolManager swap logs over the last 7
-days, rank pools by recent activity, FDV-sample only the top-N
-cross-referenced subset. Estimated runtime ≈10–15 minutes for ~50–200
-tokens with actual recent on-chain liveness — the regime where
-momentum signal, if it exists, should be detectable. This page will
-be updated when v5 lands.
-
-## Methodology
-
-The end-to-end pipeline is implemented in
-[`track-e/pipeline.py`](https://github.com/starl3xx/filter-fun/blob/main/track-e/pipeline.py)
-and is reproducible end-to-end against a deterministic synthetic
-corpus before being run on real data.
-
-1. **Stratified corpus.** Pull a balanced sample of survivor +
-   dead tokens from Clanker V4 launches in a 90d → 8d ago discovery
-   window. v4 used a 50/50 mix from 1,106 candidates. Stratification
-   prevents survivor bias: if you only look at tokens that survived,
-   you can't learn what predicts surviving.
-
-2. **Compute HP components** for each token at t+96h post-launch
-   using the spec §6.4 implementations — same code paths the
-   production indexer uses. The three unbounded components
-   (velocity, effectiveBuyers, stickyLiquidity) are normalized via
-   corpus-relative percentile rank so the composite is comparable
-   across tokens.
-
-3. **Compute outcome labels.** Forward-replay each token to 30d /
-   60d / 90d horizons and tag binary outcomes: did this token retain
-   holders? Did the price hold above a floor? Did weekly volume
-   stay above a threshold? Critically, outcome labels are computed
-   from data the HP components don't read at scoring time — that's
-   what eliminates the v3-flagged leakage class.
-
-4. **Fit weights.** L2-regularized logistic regression assigns a
-   non-negative coefficient to each component per outcome label,
-   normalized to sum to 1.0. Compare against spec defaults.
-
-5. **RandomForest importance** as a non-linear sanity check on the
-   linear fit. If a feature looks important to the linear fit but
-   trivially rankable by a tree, the fit is probably overfit to a
-   monotone relationship the data doesn't actually support.
-
-6. **Leakage discipline.** Flag any component-vs-outcome correlation
-   with |ρ| ≥ 0.85. Treat the corresponding fit weights as inflated.
-   This is the single most important addition v4 made over v3 — the
-   v3 fit suggested stickyLiquidity should be 83% of the composite
-   on the leakage-suspect outcome label; the leakage-aware reading
-   gives a much more conservative picture.
-
-7. **Lock decision.** Only adopt fitted weights that survive the
-   leakage check, have non-trivial empirical signal *and* don't
-   disrupt rank stability vs current weights. v4's locked set
-   produces ρ ≥ +0.99 rank correlation with both the spec defaults
-   and the fitted weights — i.e., the change is small in actual
-   ranking impact, which is the point.
+The fourth run was an out-of-sample validation cohort — top tokens
+by current FDV from a different sampling algorithm. It came back
+small (n=7, a sampling-failure mode that's queued for a follow-up
+fix) and slightly favored the pre-momentum-drop weights. Neither
+result was significant at that sample size, but the direction is
+enough to flag: the momentum drop is the most fragile of the
+adopted changes.
 
 ## Cross-validation against published research
 
-This is the most credibility-bearing section, so we'll be precise
-about what the external data shows and what it doesn't.
+Two independent analyses of pump.fun, on a different chain with
+different launchpad mechanics, surface the same dominant predictors
+the HP design targets. That's the load-bearing piece — not that
+specific coefficients transfer, but that the *kind* of signal we're
+measuring is what other researchers find dominant.
 
-filter.fun runs on Base, uses Uniswap V4 hooks, has a 200-bps fee
-split, and locks creator allocations. None of those match pump.fun's
-mechanics. So the cross-validation we want from external sources isn't
-"these specific weight values transfer," it's "*the dominant
-predictors filter.fun is targeting are the same ones independent
-research finds dominant on adjacent launchpads.*"
+Marino, Naviglio, Tarantelli, Lillo (2026), *Predicting the
+success of new crypto-tokens: the Pump.fun case*
+([arxiv 2602.14860](https://arxiv.org/abs/2602.14860), n=567,876).
+Three findings that line up with the lock:
 
-### Marino, Naviglio, Tarantelli, Lillo (2026)
-
-> *"Predicting the success of new crypto-tokens: the Pump.fun case"*
-> — [arxiv 2602.14860](https://arxiv.org/abs/2602.14860).
-
-The Marino paper analyzes n=567,876 pump.fun tokens. Three of its
-findings line up directly with Track E v4's:
-
-- *"Fast accumulation of liquidity through a small number of trades
-  is the strongest predictor of graduation"* — matches our
-  `stickyLiquidity` as the dominant non-leakage component.
+- *"Fast accumulation of liquidity through a small number of
+  trades is the strongest predictor of graduation."* Matches
+  sticky liquidity as the dominant non-leakage component.
 - *"Markets dominated by bot-like activity exhibit systematically
-  lower graduation probabilities"* — matches our `holderConcentration`
-  HHI penalty for concentrated holdings, and our `effectiveBuyers`
-  sqrt-dampening that discounts bot-style burst-buying.
-- *"Presence of historically successful traders provides at most a
-  modest and non-monotonic effect"* — confirms our scope decision
-  *not* to model cross-token wallet history. This was a real
-  consideration in the v2 design phase; Marino is independent
-  evidence we drew the boundary in the right place.
+  lower graduation probabilities."* Matches the holder-concentration
+  HHI penalty and the sqrt-dampening on effective buyers.
+- *"Presence of historically successful traders provides at most
+  a modest and non-monotonic effect."* Confirms the design
+  decision not to model cross-token wallet history.
 
-We were unable to confirm one Marino finding within v4's corpus:
-the partition for `velocity ≥ p75 ∩ effectiveBuyers ≤ p25` (Marino's
-"sniper" pattern) returned zero tokens in our survivor half — the
-corner is empty. Two readings: either Clanker V4's locker + dynamic-fee
-hooks structurally block the sniper-dump pattern that pump.fun's
-bonding curve allowed (a *substantive* mechanism difference), or the
-corpus is too small (n=50 in the survivor half) for a 25%×25% subset
-to land non-empty. v5 will retest at larger n.
-
-### wangr.com pump.fun dashboard
-
-> [wangr.com/analysis/pumpfun](https://wangr.com/analysis/pumpfun)
-
-The wangr dashboard reports n=567,876 pump.fun tokens with mortality
-+ holder + graduation data. Headline numbers: ~12-day average lifespan,
-~0.5% graduation rate, ~3–5% 7-day survival rate. Track E v4's
-observed survivor rate of 4.5% on Clanker V4 lands inside that band —
-the launchpad-mortality side of the analysis is consistent across
-venues. Different chain, different launchpad mechanics, similar
-mortality dynamics.
-
-### Why these matter
-
-filter.fun is on Base, not Solana, and uses Uniswap V4 hooks instead
-of pump.fun's bonding curve. Two independent analyses on different
-chains and different launchpad mechanics arriving at the same
-dominant predictors — fast liquidity accumulation, bot-activity
-penalty, no signal from cross-token wallet history — is strong
-evidence that the HP design is targeting the right *kind* of signal,
-not just an artifact of the specific Clanker V4 corpus we sampled.
-
-Cross-validation does *not* establish that the specific coefficient
-values transfer. That's what v5 and the post-mainnet refit are for.
+The wangr.com [pump.fun dashboard](https://wangr.com/analysis/pumpfun)
+(n=567,876) reports ~3–5% 7-day survival on pump.fun. The observed
+4.5% base survivor rate on Base lands inside that band — different
+chain, different mechanics, similar mortality dynamics.
 
 ## The locked weights
 
-`HP_WEIGHTS_VERSION = "2026-05-03-v4-locked"`. Spec ref §6.5.
+| Component | Weight | What it measures |
+|---|---:|---|
+| velocity | 30% | Decayed net buy inflow with sybil dampening |
+| effectiveBuyers | 15% | sqrt-dampened headcount of meaningful buyers |
+| stickyLiquidity | 30% | Time-weighted LP depth penalised by recent withdrawals |
+| retention | 15% | Long+short two-anchor holder retention fraction |
+| holderConcentration | 10% | HHI-mapped holder distribution |
+| momentum | 0% | Recent base-composite delta (currently disabled) |
 
-| Component | Weight | Δ vs pre-v4 | Spec § |
-|---|---:|---:|---|
-| velocity | 30% | — | §6.4.1 |
-| effectiveBuyers | 15% | — | §6.4.2 |
-| stickyLiquidity | **30%** | **+10pp** | §6.4.3 |
-| retention | 15% | — | §6.4.4 |
-| momentum | **0%** | **−10pp (REMOVED)** | §6.4.5 |
-| holderConcentration | 10% | — | §6.4.6, §41 |
-| **Total** | **100%** | | |
+Sum: 100%. Sticky liquidity moved up 10pp from default to absorb
+momentum's retired slot. Every other coefficient is at its prior
+default.
 
-Per-component rationale (high-level — link out to spec §6.4 for the
-formulas):
+## Caveats
 
-- **velocity** — decayed net buy inflow with sybil dampening and
-  churn discount. Held at 30%: the empirical fit suggested 19% but
-  the leakage-aware reading of v4 doesn't support a deviation from
-  spec at the corpus size we have.
-- **effectiveBuyers** — sqrt-dampened headcount of meaningful buyers.
-  Held at 15%: same reasoning as velocity. The sqrt-dampening is the
-  load-bearing piece of the design here, not the coefficient.
-- **stickyLiquidity** — time-weighted LP depth with recent-withdrawal
-  penalty. Raised to 30% from 20% (+10pp): only weight that moved.
-  Absorbs the momentum slot. Both v4 fits and Marino's "fast
-  liquidity accumulation" finding support a higher coefficient than
-  the spec default; the leakage flag means we don't go all the way
-  to the L2 fit's 42%.
-- **retention** — long+short two-anchor holder retention fraction.
-  Held at 15%: the L2 fit assigned 59% but flagged retention as
-  leakage-suspect against the holder_retention outcome.
-- **momentum** — REMOVED. Coefficient zeroed; the
-  `HP_MOMENTUM_ENABLED` flag defaults to `false` so the compute
-  path is entirely skipped. v5 may revive the component if a wider
-  delta-window experiment surfaces signal.
-- **holderConcentration** — HHI-mapped distribution penalty.
-  Held at 10%: ρ=+0.43 is real signal but n=100 with 61% zero-holder
-  tokens is too small to support raising it.
+- The validation cohort came back at n=7 and slightly favored
+  momentum-included weights (ρ +0.679 vs +0.571). Neither result is
+  significant, but it's enough to call the momentum drop the most
+  fragile of the changes.
+- The lock holds for mainnet on an asymmetric-risk argument: if it's
+  wrong, off-chain weights make a runtime detection plus refit cheap;
+  if the prior defaults were correct and we shipped them, we'd be
+  running mis-tuned weights without an obvious detection path.
+- Two leakage suspects survived to the final fit (sticky liquidity vs
+  price-floor outcome at ρ=+0.87; retention vs holder-retention at
+  ρ=+0.94). Neither component is boosted beyond the conservative
+  +10pp; the leakage flag is the reason.
 
-## Honest caveats
+## How weight changes work
 
-The version of v4 that's shipping is the most defensible reading
-of the data we have, *not* the most aggressive one. A few things
-we want to be plain about:
+Weights are off-chain config, not contract bytecode. Contracts read
+an oracle-signed Merkle root of rankings, not the coefficients — so
+any change is enforceable only when the oracle reposts a new root
+under the new set.
 
-- **The validation cohort came back at n=7.** Pre-v4 spec defaults
-  edged out LOCKED (ρ +0.679 vs +0.571) on this cohort. Neither
-  result reaches significance at that n, but the direction is
-  enough to flag that the momentum drop may be sensitive to the
-  population slice — recent-active tokens may be exactly the regime
-  where momentum signal exists, and that regime was
-  under-represented in the main corpus.
-- **The lock held for mainnet on an asymmetric-risk argument.**
-  If LOCKED is wrong, off-chain weights mean a runtime detection
-  + refit is cheap (re-fit, bump the version constant, redeploy
-  the indexer). If we shipped pre-v4 defaults and the main-corpus
-  signal was correct, we'd be running mis-tuned weights without
-  an obvious detection path. Asymmetry favors LOCKED.
-- **Momentum's drop is the most fragile of the four weight
-  changes.** It may be revived at 5–10% in v5/v6 if the wider
-  delta-window experiment surfaces signal.
-- **Two leakage suspects survived to the v4 fit.** stickyLiquidity
-  vs price_floor (ρ=+0.87) and retention vs holder_retention
-  (ρ=+0.94). The lock proposal explicitly does not boost either
-  component to the L2-fitted value; the leakage flag is the reason.
-- **Marino's sniper pattern was indeterminate, not refuted.** The
-  empty cell is consistent with V4 mechanics blocking the pattern
-  *or* with the corpus being too small. Don't read absence as evidence.
+A weight change requires an empirical fit on at least 200 tokens,
+external operator review, seven days of public notice, and an
+indexer redeploy with a new version string. Every snapshot row the
+indexer writes is tagged with the version that scored it, so
+historical scores stay re-derivable.
 
-## How weight revisions work
+The trade-off is intentional: refitting against real data without
+redeploying contracts, in exchange for a public notice and
+version-stamping discipline anyone can audit.
 
-Weights are off-chain config, not contract bytecode. This is the
-critical design choice that makes the methodology work — and the
-critical accountability promise that has to come with it.
+## What's next
 
-- The active set lives at
-  [`packages/scoring/src/types.ts`](https://github.com/starl3xx/filter-fun/blob/main/packages/scoring/src/types.ts)
-  as `LOCKED_WEIGHTS`. Contracts never read it.
-- Every `hpSnapshot` row the indexer writes is tagged with
-  `HP_WEIGHTS_VERSION` for historical reproducibility.
-- Live weights are queryable at
-  [`/scoring/weights`](/api-reference/season) (returns the version
-  string, the coefficient set, the activation timestamp, and the
-  feature-flag bundle).
-- Weight changes require: spec §6.5 amendment + empirical
-  justification on a corpus of ≥200 tokens + ≥7-day public notice
-  + indexer redeploy. The full procedure is documented at
-  [`/how-it-works/hp-scoring`](/how-it-works/hp-scoring).
-- Anyone can verify what's running at any time. The accountability
-  surface is the oracle's per-version Merkle-root commitments — if
-  the published `weightsVersion` on a settlement-authoritative row
-  doesn't match the value at `/scoring/weights`, that's a
-  detectable drift.
+A follow-up empirical run is in flight using a different cohort
+algorithm — walk recent on-chain swap activity globally, rank by
+volume, sample only the top-N. That should clear the n=7
+sampling-failure mode and either confirm or revisit the momentum
+drop. Once the protocol has 90+ days of its own mainnet data, the
+right corpus to refit against is its own. A possible revival of
+momentum at 5–10% is on the table if a wider delta-window
+experiment surfaces signal — the compute path is preserved behind
+a feature flag for exactly that contingency.
 
-The trade-off is intentional: we get the ability to refit against
-mainnet data without redeploying contracts, in exchange for a public
-notice + version-stamping discipline that anyone can audit.
-
-## Future work
-
-- **Track E v5** — liquidity-first cohort algorithm. In flight at
-  time of writing. Should clear the n=7 sampling-failure mode and
-  give us either confirmation or refutation of the LOCKED choices,
-  particularly the momentum drop.
-- **Post-mainnet refit** — once filter.fun has 90+ days of mainnet
-  data, the right corpus to fit against is *our own data*, not
-  Clanker V4's. The post-mainnet refit will explicitly retest
-  every locked coefficient against the actual filter.fun cohort.
-- **Possible momentum revival.** If the wider delta-window
-  experiment (96h − 48h instead of 96h − 72h) surfaces a fittable
-  signal, momentum may come back at 5–10%. The compute path is
-  preserved behind a feature flag for exactly this contingency.
-- **Per-phase weight differentiation.** Spec §6.5 reserves the
-  Pre-filter / Finals / Default phases for distinct weight sets;
-  v4's corpus was too small to fit three sets so it shipped with
-  one. v5 (or the post-mainnet refit) may revisit if the data
-  permits.
+This page will be updated when those land.
 
 </Visibility>
 
@@ -354,27 +145,18 @@ notice + version-stamping discipline that anyone can audit.
 
 ### Locked weights
 
-| component | weight | weights_version | spec_ref |
-|---|---:|---|---|
-| velocity | 0.30 | 2026-05-03-v4-locked | §6.4.1 |
-| effectiveBuyers | 0.15 | 2026-05-03-v4-locked | §6.4.2 |
-| stickyLiquidity | 0.30 | 2026-05-03-v4-locked | §6.4.3 |
-| retention | 0.15 | 2026-05-03-v4-locked | §6.4.4 |
-| holderConcentration | 0.10 | 2026-05-03-v4-locked | §6.4.6, §41 |
-| momentum | 0.00 | 2026-05-03-v4-locked | §6.4.5 (removed) |
+| component | weight | weights_version |
+|---|---:|---|
+| velocity | 0.30 | 2026-05-03-v4-locked |
+| effectiveBuyers | 0.15 | 2026-05-03-v4-locked |
+| stickyLiquidity | 0.30 | 2026-05-03-v4-locked |
+| retention | 0.15 | 2026-05-03-v4-locked |
+| holderConcentration | 0.10 | 2026-05-03-v4-locked |
+| momentum | 0.00 | 2026-05-03-v4-locked |
 
-Sum: 1.00 exactly. No per-phase differentiation in v4.
+Sum: 1.00. No per-phase differentiation.
 
-### Run-by-run summary
-
-| run | pr | n | corpus | fit_outcome | momentum_weight_fitted | stickyLiquidity_weight_fitted | leakage_flags |
-|---|---|---:|---|---|---:|---:|---|
-| v2 | 59 | 48 | clanker_v4 | mixed | n/a | n/a | none surfaced |
-| v3 | 62 | 250 | clanker_v4 | price_floor | 0.00 | 0.83 | retention vs holder_retention; stickyLiquidity vs price_floor |
-| v4 | 66 | 100 | clanker_v4_stratified | price_floor | 0.00 | 0.42 | retention vs holder_retention; stickyLiquidity vs price_floor (de-rated in lock) |
-| v4_validation | 76 | 7 | top_fdv_clanker_liquid | hp_vs_fdv_rank | 0.10 (default) outperforms 0.00 (locked) ρ +0.679 vs +0.571 | n/a | none — n too small for fit |
-
-### v4 fit results (price_floor outcome, n=100)
+### Empirical fit (n=100 stratified, lock run)
 
 | component | spearman_rho | rf_importance | l2_fitted_weight | locked_weight |
 |---|---:|---:|---:|---:|
@@ -385,38 +167,33 @@ Sum: 1.00 exactly. No per-phase differentiation in v4.
 | momentum | 0.00 | 0.00 | 0.00 | 0.00 |
 | holderConcentration | +0.43 | 0.02 | 0.03 | 0.10 |
 
-Cross-validated AUC (5-fold) at the v4 fit:
-- price_floor: 0.996 ± 0.008
-- holder_retention: 0.981 ± 0.038
+Cross-validated AUC (5-fold): 0.996 ± 0.008 (price-floor outcome),
+0.981 ± 0.038 (holder-retention outcome).
 
 ### External cross-validation
 
 | source | url | n | finding_match |
 |---|---|---:|---|
-| Marino, Naviglio, Tarantelli, Lillo (2026) — "Predicting the success of new crypto-tokens: the Pump.fun case" | https://arxiv.org/abs/2602.14860 | 567876 | stickyLiquidity dominant predictor; bot-activity penalty corroborates effectiveBuyers sqrt-dampening + holderConcentration HHI; cross-token wallet history not a strong signal |
-| wangr.com pump.fun dashboard | https://wangr.com/analysis/pumpfun | 567876 | mortality rate ~3–5% 7-day survival corroborates Track E v4 base rate of 4.5% |
+| Marino, Naviglio, Tarantelli, Lillo (2026), Predicting the success of new crypto-tokens: the Pump.fun case | https://arxiv.org/abs/2602.14860 | 567876 | sticky liquidity dominant; bot-activity penalty; cross-token wallet history not predictive |
+| wangr.com pump.fun dashboard | https://wangr.com/analysis/pumpfun | 567876 | ~3–5% 7-day survival rate corroborates 4.5% base rate observed on Base |
 
-### Lock provenance
+### Iteration timeline
+
+| run | n | corpus | momentum_fitted | stickyLiq_fitted | locked |
+|---|---:|---|---:|---:|---|
+| 1 | 48 | clanker_v4 | n/a | n/a | not yet |
+| 2 | 250 | clanker_v4 | 0.00 | 0.83 (leakage) | not yet |
+| 3 | 100 | clanker_v4_stratified | 0.00 | 0.42 (leakage de-rated) | yes |
+| 4 | 7 | top_fdv | momentum-included edges out | n/a | held |
+
+### Provenance
 
 | field | value |
 |---|---|
 | version_string | 2026-05-03-v4-locked |
 | activated_at | 2026-05-03T00:00:00Z |
-| spec_ref | §6.5 |
-| pipeline_source | https://github.com/starl3xx/filter-fun/blob/main/track-e/pipeline.py |
-| corpus_window | 2026-02-01 → 2026-04-24 (90d → 8d ago) |
+| corpus_window | 2026-02-01 → 2026-04-24 |
 | corpus_source | Clanker V4 stratified |
 | corpus_n | 100 (50 survivors + 50 dead) |
-| pr_locking_set | https://github.com/starl3xx/filter-fun/pull/66 |
-| validation_addendum | https://github.com/starl3xx/filter-fun/pull/76 |
-
-### Open follow-ups
-
-| item | status | unblocks |
-|---|---|---|
-| Track E v5 (liquidity-first cohort algorithm) | dispatched | Out-of-sample lock validation pre-mainnet |
-| Post-mainnet refit on filter.fun's own corpus | scheduled | First full coefficient revisit at 90+ mainnet days |
-| Momentum delta-window widening (96h − 48h) | v5 candidate | Possible momentum revival at 5–10% |
-| Per-phase weight differentiation | post-mainnet candidate | Pre-filter / Finals / Default coefficient sets |
 
 </Visibility>

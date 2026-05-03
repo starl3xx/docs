@@ -5,29 +5,28 @@ description: "How the leaderboard ranks tokens"
 
 <Visibility for="humans">
 
-## What HP is
+Every token on the leaderboard is scored 0–100 every five minutes.
+The score is called HP. At the hard cut (hour 96), the bottom six
+HP ranks are filtered. The same ranking decides finalists into
+settlement at hour 168.
 
-Every token on the leaderboard is scored 0–100 every five minutes. The
-score is called **HP**. At the hard cut (hour 96), the bottom six HP
-ranks are filtered. The same ranking determines the finalist field
-heading into settlement at hour 168.
+HP is a weighted composite of six on-chain signals. Each targets a
+different failure mode:
 
-HP is a weighted composite of six on-chain signals computed at t+96h
-post-launch. Each signal targets a different failure mode the protocol
-needs to detect:
+| Component | What it measures |
+|---|---|
+| velocity | Decayed net buy inflow with sybil dampening |
+| effectiveBuyers | sqrt-dampened headcount of meaningful buyers |
+| stickyLiquidity | Time-weighted LP depth penalised by recent withdrawals |
+| retention | Long+short two-anchor holder retention fraction |
+| momentum | Recent base-composite delta (currently disabled) |
+| holderConcentration | HHI-mapped holder distribution |
 
-| Component | What it measures | Why it matters |
-|---|---|---|
-| velocity | Decayed net buy inflow with sybil dampening | Tokens with no buyers can't survive |
-| effectiveBuyers | sqrt-dampened headcount of meaningful buyers | One whale ≠ a real cohort |
-| stickyLiquidity | Time-weighted LP depth penalised by recent withdrawals | LP that comes and goes is not LP |
-| retention | Two-anchor (long + short) holder retention fraction | Are early buyers still holding? |
-| momentum | Recent base-composite delta | (Currently zeroed — see methodology) |
-| holderConcentration | HHI-mapped holder distribution | Concentrated bags ≠ a healthy market |
+## Active weights
 
-The current weight set is `2026-05-03-v4-locked`:
+Version `2026-05-03-v4-locked`:
 
-| Component | Coefficient |
+| Component | Weight |
 |---|---:|
 | velocity | 0.30 |
 | effectiveBuyers | 0.15 |
@@ -36,34 +35,21 @@ The current weight set is `2026-05-03-v4-locked`:
 | momentum | 0.00 |
 | holderConcentration | 0.10 |
 
-For the empirical derivation of these coefficients — what was tried,
-what was rejected, and how the values cross-validate against published
-research on adjacent launchpads — see
-[**HP methodology**](/protocol/hp-methodology).
-
-For the technical formulas + per-component spec references, see
-[filter.fun spec §6.4](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#64-component-definitions).
+For how these values were derived — what was tried, what was
+rejected, and what cross-validates against published research on
+adjacent launchpads — see [HP methodology](/protocol/hp-methodology).
 
 ## How weight changes work
 
 Weights are off-chain config. Contracts read an oracle-signed Merkle
-root of rankings, not the per-component coefficients — so a weight
-change is enforceable only when the oracle reposts a new root under
-the new set.
+root of rankings, not the coefficients — so a change takes effect
+only when the oracle reposts a new root.
 
-A weight change requires:
-
-1. Empirical justification on a corpus of ≥200 tokens (Track E or
-   successor), reported as Spearman ρ + AUC vs the locked outcome
-   label.
-2. Spec §6.5 amendment + external operator review.
-3. ≥7-day public notice of the proposed activation date.
-4. Indexer redeploy with the new `LOCKED_WEIGHTS` and a bumped
-   `HP_WEIGHTS_VERSION` string.
-5. The next oracle Merkle root posts under the new ranking.
-
-Anyone can verify what's running at any time via the live
-`/scoring/weights` endpoint.
+Updates require an empirical fit on at least 200 tokens, external
+review, seven days of public notice, and an indexer redeploy with
+a new version string. Every score the indexer writes is tagged with
+the version that produced it, so the active set is always
+verifiable.
 
 </Visibility>
 
@@ -74,31 +60,27 @@ Anyone can verify what's running at any time via the live
 | Fact | Value |
 |---|---|
 | Score range | 0–100 |
-| Recompute cadence | 5 minutes (BLOCK_TICK), plus per-event triggers |
-| Triggers | BLOCK_TICK, SWAP, HOLDER_SNAPSHOT, PHASE_BOUNDARY, CUT, FINALIZE |
-| Settlement-authoritative anchors | CUT (h96), FINALIZE (h168) |
+| Recompute cadence | 5 minutes, plus per-event triggers |
+| Settlement-authoritative anchors | hour 96 (cut), hour 168 (settlement) |
 | Live weights endpoint | https://api.filter.fun/scoring/weights |
 | Active version | 2026-05-03-v4-locked |
-| Components | 6 (velocity, effectiveBuyers, stickyLiquidity, retention, momentum, holderConcentration) |
-| Active components | 5 (momentum disabled in v4 — coefficient 0.00 + flag false) |
-| Per-phase differentiation | false (single set for preFilter and finals) |
+| Active components | 5 of 6 (momentum disabled) |
+| Per-phase differentiation | false |
 
-### Locked weights
+### Active weights
 
-| component | weight | spec_ref |
-|---|---:|---|
-| velocity | 0.30 | §6.4.1 |
-| effectiveBuyers | 0.15 | §6.4.2 |
-| stickyLiquidity | 0.30 | §6.4.3 |
-| retention | 0.15 | §6.4.4 |
-| momentum | 0.00 | §6.4.5 (disabled) |
-| holderConcentration | 0.10 | §6.4.6, §41 |
+| component | weight |
+|---|---:|
+| velocity | 0.30 |
+| effectiveBuyers | 0.15 |
+| stickyLiquidity | 0.30 |
+| retention | 0.15 |
+| momentum | 0.00 |
+| holderConcentration | 0.10 |
 
-### Methodology page
+### Methodology
 
-For the empirical derivation of these weights — Track E v2 → v4
-iteration, leakage discipline, external cross-validation against
-Marino et al (2026) and the wangr.com pump.fun dashboard — see
+For empirical derivation, see
 [/protocol/hp-methodology](/protocol/hp-methodology).
 
 </Visibility>

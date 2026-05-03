@@ -8,13 +8,10 @@ End-to-end rehearsal of one filter.fun season on Base Sepolia (chain
 finals cut → settlement → rollover & bonus claim → POL deployment →
 events stream verification.
 
-If this runbook passes, the contract suite + indexer + web are wired
-correctly for the mainnet cutover. Anything that fails here represents a
-real production bug — don't paper over it; fix it and re-run from the
-failed step.
-
-> **Spec refs:** §4 (lifecycle), §5 (genesis token), §27.1 (deploy),
-> §27.7 (smoke-test).
+If this runbook passes, the contract suite + indexer + web are
+wired correctly for the mainnet cutover. Anything that fails here
+represents a real production bug — don't paper over it; fix it and
+re-run from the failed step.
 
 ---
 
@@ -96,7 +93,7 @@ forge script script/SeedFilter.s.sol:SeedFilter \
 
 - [ ] Manifest `filterToken.address` and `filterToken.locker` are now populated.
 - [ ] $FILTER token total supply == 1e9 (`cast call $FILTER 'totalSupply()(uint256)' ...`).
-- [ ] Spec §5.3 sanity: $FILTER is launched via the protocol-bypass path, but the contract treats it identically to a public launch from there on (no special HP / settlement / scoring). This is enforced by `FilterLauncher._launch` running the same code path with `isProtocolLaunched=true`. **It must be possible for $FILTER to lose.**
+- [ ] Sanity: $FILTER is launched via the protocol-bypass path, but the contract treats it identically to a public launch from there on (no special HP / settlement / scoring). `FilterLauncher._launch` runs the same code path with `isProtocolLaunched=true`. **It must be possible for $FILTER to lose.**
 
 ## 5. Public launches
 
@@ -227,6 +224,6 @@ Recovery options:
 ## What this runbook deliberately doesn't cover
 
 - **Mainnet deploy** — separate runbook (TBD); requires multisig setup + treasury custody design that's out of scope for Sepolia rehearsal.
-- **Custom V4 swap UI** — the smoke test uses `cast send` for swaps; the spectator UI doesn't ship a swap form in genesis (Phase 2).
-- **Arena UI smoke-testing** — Arena page (Epic 1.4 / PR #34) is independent and smoke-tested separately once it merges.
+- **Custom V4 swap UI** — the smoke test uses `cast send` for swaps; the spectator UI doesn't ship a swap form yet.
+- **Arena UI smoke-testing** — the Arena page is smoke-tested separately.
 - **Indexer scaling** — single-instance Ponder is fine for testnet rehearsal; the production indexer scaling story is a separate concern.
