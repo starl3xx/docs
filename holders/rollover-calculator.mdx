@@ -3,6 +3,147 @@ title: "Rollover calculator — what filtered-token holders get"
 description: "Interactive calculator showing how much of the winning token a filtered-token holder can expect, in token amounts and dollars."
 ---
 
+export const RolloverCalculator = () => {
+  const [tokens, setTokens] = React.useState(12);
+  const [avgLp, setAvgLp] = React.useState(3);
+  const [yourPct, setYourPct] = React.useState(10);
+  const [winnerMcap, setWinnerMcap] = React.useState(50000);
+  const [ethPrice, setEthPrice] = React.useState(3500);
+
+  const filteredCount = Math.floor(tokens / 2);
+  const totalFilteredLp = filteredCount * avgLp;
+  const bounty = totalFilteredLp * 0.025;
+  const netPot = totalFilteredLp - bounty;
+  const rollover = netPot * 0.45;
+  const holdBonus = netPot * 0.25;
+  const mechanics = netPot * 0.10;
+  const pol = netPot * 0.10;
+  const treasury = netPot * 0.10;
+  const yourTokenShare = totalFilteredLp > 0 ? avgLp / totalFilteredLp : 0;
+  const yourRolloverEth = rollover * yourTokenShare * (yourPct / 100);
+  const yourBonusEth = holdBonus * yourTokenShare * (yourPct / 100) * (1 / 3);
+  const totalEth = yourRolloverEth + yourBonusEth;
+  const totalUsd = totalEth * ethPrice;
+  const winnerSupply = 1e9;
+  const winnerPriceUsd = winnerMcap / winnerSupply;
+  const yourRolloverUsd = yourRolloverEth * ethPrice;
+  const winnerTokens = winnerPriceUsd > 0 ? yourRolloverUsd / winnerPriceUsd : 0;
+  const winnerPct = (winnerTokens / winnerSupply) * 100;
+
+  const fmtEth = (n) => n.toFixed(n < 1 ? 3 : 2) + " ETH";
+  const fmtUsd = (n) => "$" + Math.round(n).toLocaleString();
+  const fmtTokens = (n) => {
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + "M tokens";
+    if (n >= 1e3) return Math.round(n / 1e3) + "k tokens";
+    return Math.round(n) + " tokens";
+  };
+  const fmtMcap = (n) => n >= 1e6 ? "$" + (n / 1e6).toFixed(1) + "M" : "$" + Math.round(n / 1000) + "k";
+
+  const presetSparse = () => { setTokens(6); setAvgLp(1.5); setYourPct(10); setWinnerMcap(25000); };
+  const presetAvg = () => { setTokens(12); setAvgLp(3.0); setYourPct(10); setWinnerMcap(50000); };
+  const presetViral = () => { setTokens(12); setAvgLp(8.0); setYourPct(10); setWinnerMcap(250000); };
+
+  const btn = { flex: 1, fontSize: '13px', padding: '8px 12px', background: 'transparent', border: '0.5px solid rgba(0,0,0,0.15)', borderRadius: '8px', cursor: 'pointer' };
+  const row = { display: 'grid', gridTemplateColumns: '220px 1fr 90px', alignItems: 'center', gap: '12px' };
+  const lbl = { fontSize: '14px', color: '#5f5e5a' };
+  const out = { fontSize: '14px', fontWeight: 500, textAlign: 'right' };
+  const card = { background: '#f5f5f5', padding: '14px', borderRadius: '8px' };
+  const small = { background: '#f5f5f5', padding: '10px', borderRadius: '8px' };
+
+  return (
+    <div style={{ padding: '1rem 0', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem' }}>
+        <button type="button" style={btn} onClick={presetSparse}>Sparse week</button>
+        <button type="button" style={btn} onClick={presetAvg}>Average week</button>
+        <button type="button" style={btn} onClick={presetViral}>Viral week</button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+        <div style={row}>
+          <label style={lbl}>Tokens activated this week</label>
+          <input type="range" min="4" max="12" step="1" value={tokens} onChange={(e) => setTokens(+e.target.value)} style={{ width: '100%' }} />
+          <span style={out}>{tokens}</span>
+        </div>
+        <div style={row}>
+          <label style={lbl}>Average LP per token at hour 96</label>
+          <input type="range" min="0.5" max="20" step="0.1" value={avgLp} onChange={(e) => setAvgLp(+e.target.value)} style={{ width: '100%' }} />
+          <span style={out}>{avgLp.toFixed(1)} ETH</span>
+        </div>
+        <div style={row}>
+          <label style={lbl}>Your % of one filtered token</label>
+          <input type="range" min="0.1" max="50" step="0.1" value={yourPct} onChange={(e) => setYourPct(+e.target.value)} style={{ width: '100%' }} />
+          <span style={out}>{yourPct.toFixed(1)}%</span>
+        </div>
+        <div style={row}>
+          <label style={lbl}>Winner market cap at settlement</label>
+          <input type="range" min="10000" max="1000000" step="5000" value={winnerMcap} onChange={(e) => setWinnerMcap(+e.target.value)} style={{ width: '100%' }} />
+          <span style={out}>{fmtMcap(winnerMcap)}</span>
+        </div>
+        <div style={row}>
+          <label style={lbl}>ETH price (USD)</label>
+          <input type="range" min="1500" max="6000" step="100" value={ethPrice} onChange={(e) => setEthPrice(+e.target.value)} style={{ width: '100%' }} />
+          <span style={out}>${ethPrice.toLocaleString()}</span>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '1rem' }}>
+        <div style={{ fontSize: '13px', color: '#5f5e5a', marginBottom: '4px' }}>Losers pot</div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', padding: '12px 16px', background: '#f5f5f5', borderRadius: '8px' }}>
+          <span style={{ fontSize: '18px', fontWeight: 500 }}>{fmtEth(totalFilteredLp)}</span>
+          <span style={{ fontSize: '13px', color: '#5f5e5a' }}>{fmtUsd(totalFilteredLp * ethPrice)}</span>
+          <span style={{ fontSize: '12px', color: '#888780', marginLeft: 'auto' }}>After 2.5% bounty: {fmtUsd(netPot * ethPrice)}</span>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '1.5rem' }}>
+        <div style={{ fontSize: '13px', color: '#5f5e5a', marginBottom: '4px' }}>Pot allocation (45/25/10/10/10)</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+          <div style={small}><div style={{ fontSize: '11px', color: '#5f5e5a' }}>Rollover 45%</div><div style={{ fontSize: '14px', fontWeight: 500, marginTop: '2px' }}>{fmtEth(rollover)}</div></div>
+          <div style={small}><div style={{ fontSize: '11px', color: '#5f5e5a' }}>Hold bonus 25%</div><div style={{ fontSize: '14px', fontWeight: 500, marginTop: '2px' }}>{fmtEth(holdBonus)}</div></div>
+          <div style={small}><div style={{ fontSize: '11px', color: '#5f5e5a' }}>Mechanics 10%</div><div style={{ fontSize: '14px', fontWeight: 500, marginTop: '2px' }}>{fmtEth(mechanics)}</div></div>
+          <div style={small}><div style={{ fontSize: '11px', color: '#5f5e5a' }}>POL 10%</div><div style={{ fontSize: '14px', fontWeight: 500, marginTop: '2px' }}>{fmtEth(pol)}</div></div>
+          <div style={small}><div style={{ fontSize: '11px', color: '#5f5e5a' }}>Treasury 10%</div><div style={{ fontSize: '14px', fontWeight: 500, marginTop: '2px' }}>{fmtEth(treasury)}</div></div>
+        </div>
+      </div>
+
+      <div style={{ borderTop: '0.5px solid rgba(0,0,0,0.15)', paddingTop: '1.25rem' }}>
+        <div style={{ fontSize: '14px', fontWeight: 500, marginBottom: '12px' }}>Your slice as a filtered-token holder</div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+          <div style={{ background: '#fbeaf0', padding: '14px', borderRadius: '8px' }}>
+            <div style={{ fontSize: '12px', color: '#993556', marginBottom: '4px' }}>Rollover share</div>
+            <div style={{ fontSize: '22px', fontWeight: 500, color: '#4b1528' }}>{fmtEth(yourRolloverEth)}</div>
+            <div style={{ fontSize: '13px', color: '#993556', marginTop: '2px' }}>{fmtUsd(yourRolloverEth * ethPrice)}</div>
+          </div>
+          <div style={{ background: '#eaf3de', padding: '14px', borderRadius: '8px' }}>
+            <div style={{ fontSize: '12px', color: '#3b6d11', marginBottom: '4px' }}>+ Hold bonus (if held 14 days)</div>
+            <div style={{ fontSize: '22px', fontWeight: 500, color: '#173404' }}>{fmtEth(yourBonusEth)}</div>
+            <div style={{ fontSize: '13px', color: '#3b6d11', marginTop: '2px' }}>{fmtUsd(yourBonusEth * ethPrice)}</div>
+          </div>
+        </div>
+
+        <div style={{ ...card, marginBottom: '12px' }}>
+          <div style={{ fontSize: '12px', color: '#5f5e5a', marginBottom: '4px' }}>Estimated total payout</div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
+            <span style={{ fontSize: '26px', fontWeight: 500 }}>{fmtEth(totalEth)}</span>
+            <span style={{ fontSize: '16px', color: '#5f5e5a' }}>{fmtUsd(totalUsd)}</span>
+          </div>
+        </div>
+
+        <div style={card}>
+          <div style={{ fontSize: '12px', color: '#5f5e5a', marginBottom: '6px' }}>
+            Estimated winner tokens received <span style={{ fontSize: '11px', color: '#888780' }}>(zero-slippage approximation)</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
+            <span style={{ fontSize: '18px', fontWeight: 500 }}>{fmtTokens(winnerTokens)}</span>
+            <span style={{ fontSize: '13px', color: '#5f5e5a' }}>({winnerPct.toFixed(2)}% of supply)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 # Rollover calculator ▼
 
 If your token gets filtered, your position auto-rolls into the winner — pro rata. This page shows how much of the winning token to expect, in both token amounts and dollar value, across realistic week scenarios.
@@ -11,236 +152,7 @@ The math is locked in spec §11 (settlement distribution) + §44 (pre-filter exi
 
 ## Calculator
 
-<div id="rc-root" style={{ padding: '1rem 0', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-
-<div style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem' }}>
-  <button id="rc-preset-sparse" type="button" style={{ flex: 1, fontSize: '13px', padding: '8px 12px', background: 'transparent', border: '0.5px solid rgba(0,0,0,0.15)', borderRadius: '8px', cursor: 'pointer' }}>Sparse week</button>
-  <button id="rc-preset-avg" type="button" style={{ flex: 1, fontSize: '13px', padding: '8px 12px', background: 'transparent', border: '0.5px solid rgba(0,0,0,0.15)', borderRadius: '8px', cursor: 'pointer' }}>Average week</button>
-  <button id="rc-preset-viral" type="button" style={{ flex: 1, fontSize: '13px', padding: '8px 12px', background: 'transparent', border: '0.5px solid rgba(0,0,0,0.15)', borderRadius: '8px', cursor: 'pointer' }}>Viral week</button>
-</div>
-
-<div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-
-  <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr 90px', alignItems: 'center', gap: '12px' }}>
-    <label htmlFor="rc-tokens" style={{ fontSize: '14px', color: '#5f5e5a' }}>Tokens activated this week</label>
-    <input type="range" id="rc-tokens" min="4" max="12" defaultValue="12" step="1" style={{ width: '100%' }} />
-    <span id="rc-tokens-out" style={{ fontSize: '14px', fontWeight: 500, textAlign: 'right' }}>12</span>
-  </div>
-
-  <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr 90px', alignItems: 'center', gap: '12px' }}>
-    <label htmlFor="rc-avg-lp" style={{ fontSize: '14px', color: '#5f5e5a' }}>Average LP per token at hour 96</label>
-    <input type="range" id="rc-avg-lp" min="0.5" max="20" defaultValue="3" step="0.1" style={{ width: '100%' }} />
-    <span id="rc-avg-lp-out" style={{ fontSize: '14px', fontWeight: 500, textAlign: 'right' }}>3.0 ETH</span>
-  </div>
-
-  <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr 90px', alignItems: 'center', gap: '12px' }}>
-    <label htmlFor="rc-your-pct" style={{ fontSize: '14px', color: '#5f5e5a' }}>Your % of one filtered token</label>
-    <input type="range" id="rc-your-pct" min="0.1" max="50" defaultValue="10" step="0.1" style={{ width: '100%' }} />
-    <span id="rc-your-pct-out" style={{ fontSize: '14px', fontWeight: 500, textAlign: 'right' }}>10.0%</span>
-  </div>
-
-  <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr 90px', alignItems: 'center', gap: '12px' }}>
-    <label htmlFor="rc-winner-mcap" style={{ fontSize: '14px', color: '#5f5e5a' }}>Winner market cap at settlement</label>
-    <input type="range" id="rc-winner-mcap" min="10000" max="1000000" defaultValue="50000" step="5000" style={{ width: '100%' }} />
-    <span id="rc-winner-mcap-out" style={{ fontSize: '14px', fontWeight: 500, textAlign: 'right' }}>$50k</span>
-  </div>
-
-  <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr 90px', alignItems: 'center', gap: '12px' }}>
-    <label htmlFor="rc-eth-price" style={{ fontSize: '14px', color: '#5f5e5a' }}>ETH price (USD)</label>
-    <input type="range" id="rc-eth-price" min="1500" max="6000" defaultValue="3500" step="100" style={{ width: '100%' }} />
-    <span id="rc-eth-price-out" style={{ fontSize: '14px', fontWeight: 500, textAlign: 'right' }}>$3,500</span>
-  </div>
-
-</div>
-
-<div style={{ marginBottom: '1rem' }}>
-  <div style={{ fontSize: '13px', color: '#5f5e5a', marginBottom: '4px' }}>Losers pot</div>
-  <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', padding: '12px 16px', background: '#f5f5f5', borderRadius: '8px' }}>
-    <span id="rc-losers-eth" style={{ fontSize: '18px', fontWeight: 500 }}>18.00 ETH</span>
-    <span id="rc-losers-usd" style={{ fontSize: '13px', color: '#5f5e5a' }}>$63,000</span>
-    <span style={{ fontSize: '12px', color: '#888780', marginLeft: 'auto' }}>After 2.5% bounty: <span id="rc-net-pot">$61,425</span></span>
-  </div>
-</div>
-
-<div style={{ marginBottom: '1.5rem' }}>
-  <div style={{ fontSize: '13px', color: '#5f5e5a', marginBottom: '4px' }}>Pot allocation (45/25/10/10/10)</div>
-  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
-    <div style={{ background: '#f5f5f5', padding: '10px', borderRadius: '8px' }}>
-      <div style={{ fontSize: '11px', color: '#5f5e5a' }}>Rollover 45%</div>
-      <div id="rc-alloc-rollover" style={{ fontSize: '14px', fontWeight: 500, marginTop: '2px' }}>7.90 ETH</div>
-    </div>
-    <div style={{ background: '#f5f5f5', padding: '10px', borderRadius: '8px' }}>
-      <div style={{ fontSize: '11px', color: '#5f5e5a' }}>Hold bonus 25%</div>
-      <div id="rc-alloc-bonus" style={{ fontSize: '14px', fontWeight: 500, marginTop: '2px' }}>4.39 ETH</div>
-    </div>
-    <div style={{ background: '#f5f5f5', padding: '10px', borderRadius: '8px' }}>
-      <div style={{ fontSize: '11px', color: '#5f5e5a' }}>Mechanics 10%</div>
-      <div id="rc-alloc-mech" style={{ fontSize: '14px', fontWeight: 500, marginTop: '2px' }}>1.76 ETH</div>
-    </div>
-    <div style={{ background: '#f5f5f5', padding: '10px', borderRadius: '8px' }}>
-      <div style={{ fontSize: '11px', color: '#5f5e5a' }}>POL 10%</div>
-      <div id="rc-alloc-pol" style={{ fontSize: '14px', fontWeight: 500, marginTop: '2px' }}>1.76 ETH</div>
-    </div>
-    <div style={{ background: '#f5f5f5', padding: '10px', borderRadius: '8px' }}>
-      <div style={{ fontSize: '11px', color: '#5f5e5a' }}>Treasury 10%</div>
-      <div id="rc-alloc-treas" style={{ fontSize: '14px', fontWeight: 500, marginTop: '2px' }}>1.76 ETH</div>
-    </div>
-  </div>
-</div>
-
-<div style={{ borderTop: '0.5px solid rgba(0,0,0,0.15)', paddingTop: '1.25rem' }}>
-
-  <div style={{ fontSize: '14px', fontWeight: 500, marginBottom: '12px' }}>Your slice as a filtered-token holder</div>
-
-  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-    <div style={{ background: '#fbeaf0', padding: '14px', borderRadius: '8px' }}>
-      <div style={{ fontSize: '12px', color: '#993556', marginBottom: '4px' }}>Rollover share</div>
-      <div id="rc-your-rollover-eth" style={{ fontSize: '22px', fontWeight: 500, color: '#4b1528' }}>0.132 ETH</div>
-      <div id="rc-your-rollover-usd" style={{ fontSize: '13px', color: '#993556', marginTop: '2px' }}>$461</div>
-    </div>
-    <div style={{ background: '#eaf3de', padding: '14px', borderRadius: '8px' }}>
-      <div style={{ fontSize: '12px', color: '#3b6d11', marginBottom: '4px' }}>+ Hold bonus (if held 14 days)</div>
-      <div id="rc-your-bonus-eth" style={{ fontSize: '22px', fontWeight: 500, color: '#173404' }}>0.042 ETH</div>
-      <div id="rc-your-bonus-usd" style={{ fontSize: '13px', color: '#3b6d11', marginTop: '2px' }}>$146</div>
-    </div>
-  </div>
-
-  <div style={{ background: '#f5f5f5', padding: '14px', borderRadius: '8px', marginBottom: '12px' }}>
-    <div style={{ fontSize: '12px', color: '#5f5e5a', marginBottom: '4px' }}>Estimated total payout</div>
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
-      <span id="rc-your-total-eth" style={{ fontSize: '26px', fontWeight: 500 }}>0.174 ETH</span>
-      <span id="rc-your-total-usd" style={{ fontSize: '16px', color: '#5f5e5a' }}>$607</span>
-    </div>
-  </div>
-
-  <div style={{ background: '#f5f5f5', padding: '14px', borderRadius: '8px' }}>
-    <div style={{ fontSize: '12px', color: '#5f5e5a', marginBottom: '6px' }}>Estimated winner tokens received <span style={{ fontSize: '11px', color: '#888780' }}>(zero-slippage approximation)</span></div>
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
-      <span id="rc-winner-tokens" style={{ fontSize: '18px', fontWeight: 500 }}>9.2M tokens</span>
-      <span id="rc-winner-pct" style={{ fontSize: '13px', color: '#5f5e5a' }}>(0.92% of supply)</span>
-    </div>
-  </div>
-
-</div>
-
-</div>
-
-<script dangerouslySetInnerHTML={{ __html: `
-(function() {
-  function init() {
-    var root = document.getElementById("rc-root");
-    if (!root || root.dataset.rcReady === "1") return;
-    root.dataset.rcReady = "1";
-    function $(id) { return document.getElementById(id); }
-
-    var inputs = {
-      tokens: $("rc-tokens"),
-      avgLp: $("rc-avg-lp"),
-      yourPct: $("rc-your-pct"),
-      winnerMcap: $("rc-winner-mcap"),
-      ethPrice: $("rc-eth-price"),
-    };
-    if (!inputs.tokens) return;
-
-    var fmt = {
-      eth: function(n) { return n.toFixed(n < 1 ? 3 : 2) + " ETH"; },
-      usdFull: function(n) { return "$" + Math.round(n).toLocaleString(); },
-      tokens: function(n) {
-        if (n >= 1e6) return (n / 1e6).toFixed(1) + "M tokens";
-        if (n >= 1e3) return Math.round(n / 1e3) + "k tokens";
-        return Math.round(n) + " tokens";
-      },
-    };
-
-    function calc() {
-      var tokens = +inputs.tokens.value;
-      var avgLp = +inputs.avgLp.value;
-      var yourPct = +inputs.yourPct.value;
-      var winnerMcap = +inputs.winnerMcap.value;
-      var ethPrice = +inputs.ethPrice.value;
-
-      var filteredCount = Math.floor(tokens / 2);
-      var totalFilteredLp = filteredCount * avgLp;
-      var bounty = totalFilteredLp * 0.025;
-      var netPot = totalFilteredLp - bounty;
-
-      var rollover = netPot * 0.45;
-      var holdBonus = netPot * 0.25;
-      var mechanics = netPot * 0.10;
-      var pol = netPot * 0.10;
-      var treasury = netPot * 0.10;
-
-      var yourTokenShare = avgLp / totalFilteredLp;
-      var yourRolloverEth = rollover * yourTokenShare * (yourPct / 100);
-      var yourBonusEth = holdBonus * yourTokenShare * (yourPct / 100) * (1 / 3);
-      var totalEth = yourRolloverEth + yourBonusEth;
-      var totalUsd = totalEth * ethPrice;
-
-      var winnerSupply = 1e9;
-      var winnerPriceUsd = winnerMcap / winnerSupply;
-      var yourRolloverUsd = yourRolloverEth * ethPrice;
-      var winnerTokens = yourRolloverUsd / winnerPriceUsd;
-      var winnerPct = (winnerTokens / winnerSupply) * 100;
-
-      $("rc-tokens-out").textContent = String(tokens);
-      $("rc-avg-lp-out").textContent = avgLp.toFixed(1) + " ETH";
-      $("rc-your-pct-out").textContent = yourPct.toFixed(1) + "%";
-      $("rc-winner-mcap-out").textContent = winnerMcap >= 1e6
-        ? "$" + (winnerMcap / 1e6).toFixed(1) + "M"
-        : "$" + Math.round(winnerMcap / 1000) + "k";
-      $("rc-eth-price-out").textContent = "$" + ethPrice.toLocaleString();
-
-      $("rc-losers-eth").textContent = fmt.eth(totalFilteredLp);
-      $("rc-losers-usd").textContent = fmt.usdFull(totalFilteredLp * ethPrice);
-      $("rc-net-pot").textContent = fmt.usdFull(netPot * ethPrice);
-
-      $("rc-alloc-rollover").textContent = fmt.eth(rollover);
-      $("rc-alloc-bonus").textContent = fmt.eth(holdBonus);
-      $("rc-alloc-mech").textContent = fmt.eth(mechanics);
-      $("rc-alloc-pol").textContent = fmt.eth(pol);
-      $("rc-alloc-treas").textContent = fmt.eth(treasury);
-
-      $("rc-your-rollover-eth").textContent = fmt.eth(yourRolloverEth);
-      $("rc-your-rollover-usd").textContent = fmt.usdFull(yourRolloverEth * ethPrice);
-      $("rc-your-bonus-eth").textContent = fmt.eth(yourBonusEth);
-      $("rc-your-bonus-usd").textContent = fmt.usdFull(yourBonusEth * ethPrice);
-      $("rc-your-total-eth").textContent = fmt.eth(totalEth);
-      $("rc-your-total-usd").textContent = fmt.usdFull(totalUsd);
-
-      $("rc-winner-tokens").textContent = fmt.tokens(winnerTokens);
-      $("rc-winner-pct").textContent = "(" + winnerPct.toFixed(2) + "% of supply)";
-    }
-
-    Object.keys(inputs).forEach(function(k) {
-      inputs[k].addEventListener("input", calc);
-    });
-
-    function preset(t, lp, pct, mcap) {
-      inputs.tokens.value = t;
-      inputs.avgLp.value = lp;
-      inputs.yourPct.value = pct;
-      inputs.winnerMcap.value = mcap;
-      calc();
-    }
-
-    $("rc-preset-sparse").addEventListener("click", function() { preset(6, 1.5, 10, 25000); });
-    $("rc-preset-avg").addEventListener("click", function() { preset(12, 3.0, 10, 50000); });
-    $("rc-preset-viral").addEventListener("click", function() { preset(12, 8.0, 10, 250000); });
-
-    calc();
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
-  }
-  // Mintlify is a SPA — re-init on route change
-  setTimeout(init, 100);
-  setTimeout(init, 500);
-  setTimeout(init, 1500);
-})();
-` }} />
+<RolloverCalculator />
 
 ## How the math works
 
