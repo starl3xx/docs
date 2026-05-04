@@ -10,7 +10,7 @@ back if you survive.
 
 | Source | Size | When |
 | --- | --- | --- |
-| Trading fee share | 0.20% of volume | Continuous, while live |
+| Trading fee share | 0.20% of volume | Perpetual — accrues while the pool trades; winners' pools persist forever |
 | Champion bounty | 2.5% of losers pot | If your token wins the week |
 | Refundable launch stake | = launch cost | Returned if you survive Friday's cut |
 
@@ -39,16 +39,20 @@ button after settlement and the recipient receives Ξ0.10 in WETH.
 
 ### When fees stop accruing
 
-The creator-fee window closes at the **earliest** of:
+There is no artificial cutoff. The creator's 0.20% slice accrues for
+as long as the pool processes a swap. The cap is implicit in the pool's
+lifecycle:
 
-- 72 hours after launch (cap on dormant trade)
-- the token is filtered (cut at hour 96 or settlement at hour 168)
-- final settlement of the season
+- **Filtered tokens** (bottom 6 at hour 96) — LP unwinds at the cut.
+  No pool, no trades, no fees.
+- **Finalist non-winners** (places 2–6 at settlement) — LP unwinds at
+  settlement. Same dynamic.
+- **Winners** — pool persists permanently with POL backing. The creator
+  earns 0.20% of all trade volume **in perpetuity.**
 
-Tokens that make finals can keep accruing creator fees through
-the finals phase; the window closes at settlement. After that,
-long-tail trading fees route through the standard fee splits but
-the creator slice is no longer credited.
+The protocol does not need an explicit `disableCreatorFee()` shutoff —
+the LP-unwind path naturally terminates fee accrual. Unclaimed fees from
+before any cut remain claimable indefinitely.
 
 ## 2.5% champion bounty
 
@@ -139,13 +143,18 @@ Three rules prevent creators from gaming their own token:
 
 ### Creator fee window
 
-| Closes at | Trigger |
-| --- | --- |
-| `launchTime + 72h` | dormant cap |
-| `block.timestamp == filterFiredAt(token)` | token filtered |
-| `block.timestamp == settlementAt(seasonId)` | final settlement |
+Perpetual. There is no time-based cap. Accrual terminates only when the
+underlying pool stops trading (LP-unwind path).
 
-Window resolution is the **earliest** of the three.
+| Token outcome | Pool fate | Fee accrual |
+| --- | --- | --- |
+| Filtered at hour 96 | LP unwinds at cut | stops at cut |
+| Finalist non-winner | LP unwinds at settlement | stops at settlement |
+| Winner | LP persists with POL | accrues in perpetuity |
+
+`CreatorFeeDisabled` event remains in the ABI for emergency operator
+overrides (e.g. sanctioned/compromised recipient address) but is not
+used in the normal lifecycle.
 
 ### Champion bounty
 

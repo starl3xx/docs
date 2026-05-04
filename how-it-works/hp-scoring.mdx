@@ -10,7 +10,7 @@ The score is called HP. At the hard cut (hour 96), the bottom six
 HP ranks are filtered. The same ranking decides finalists into
 settlement at hour 168.
 
-HP is a weighted composite of six on-chain signals. Each targets a
+HP is a weighted composite of five on-chain signals. Each targets a
 different failure mode:
 
 | Component | What it measures |
@@ -19,8 +19,12 @@ different failure mode:
 | effectiveBuyers | sqrt-dampened headcount of meaningful buyers |
 | stickyLiquidity | Time-weighted LP depth penalised by recent withdrawals |
 | retention | Long+short two-anchor holder retention fraction |
-| momentum | Recent base-composite delta (currently disabled) |
 | holderConcentration | HHI-mapped holder distribution |
+
+A sixth component, `momentum`, was tested in Track E v2–v4 and removed
+2026-05-03 — its 10% weight was redistributed to `stickyLiquidity`. The
+component code remains behind a feature flag for v6 reconsideration.
+See [HP methodology](/protocol/hp-methodology) for the full derivation.
 
 ## Active weights
 
@@ -32,7 +36,6 @@ Version `2026-05-03-v4-locked`:
 | effectiveBuyers | 0.15 |
 | stickyLiquidity | 0.30 |
 | retention | 0.15 |
-| momentum | 0.00 |
 | holderConcentration | 0.10 |
 
 For how these values were derived — what was tried, what was
@@ -59,12 +62,12 @@ verifiable.
 
 | Fact | Value |
 |---|---|
-| Score range | 0–100 |
+| Score range | 0–100 (currently shipped); 0–10000 integer per spec §6.5 amendment, gated on Epic 1.18 |
 | Recompute cadence | 5 minutes, plus per-event triggers |
 | Settlement-authoritative anchors | hour 96 (cut), hour 168 (settlement) |
 | Live weights endpoint | https://api.filter.fun/scoring/weights |
 | Active version | 2026-05-03-v4-locked |
-| Active components | 5 of 6 (momentum disabled) |
+| Active components | 5 (momentum removed 2026-05-03) |
 | Per-phase differentiation | false |
 
 ### Active weights
@@ -75,7 +78,6 @@ verifiable.
 | effectiveBuyers | 0.15 |
 | stickyLiquidity | 0.30 |
 | retention | 0.15 |
-| momentum | 0.00 |
 | holderConcentration | 0.10 |
 
 ### Methodology

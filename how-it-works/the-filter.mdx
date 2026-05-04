@@ -76,7 +76,11 @@ pot splits as:
 <Steps>
   <Step title="Launch (Mon 00:00 → Wed 00:00)">
     Twelve slots, first-come-first-served. Dynamic launch cost rises with
-    each slot. One launch per wallet per week.
+    each slot. One launch per wallet per week. The season activates when
+    the **4th reservation** lands; if fewer than 4 by Wed 00:00, the
+    season aborts and every escrowed launch cost + stake refunds. See
+    [Season cadence](/how-it-works/season-cadence) for the deferred-
+    activation flow.
   </Step>
   <Step title="Trade (Wed 00:00 → Fri 00:00)">
     Full field of twelve. Pure trading, no eliminations. HP rankings live
@@ -106,6 +110,7 @@ pot splits as:
 | Fact | Value |
 | --- | --- |
 | Maximum tokens per season | 12 |
+| Minimum reservations to activate | 4 |
 | Tokens surviving first cut | 6 |
 | Final winner per season | 1 |
 | Filtered tokens disabled by protocol | false |

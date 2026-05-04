@@ -15,12 +15,25 @@ Times below are UTC and Monday-aligned.
 <Steps>
   <Step title="Launch window — Mon 00:00 → Wed 00:00 (48h)">
     Twelve launch slots open. First-come-first-served. Dynamic launch cost
-    rises with each slot. Tokens are tradable as soon as they launch —
-    going early gets you more pre-cut trading time, which is the reward
-    for taking the early-slot risk.
+    rises with each slot.
 
-    On Week 1, the protocol launches `$FILTER` into one of the 12 slots.
-    No special treatment — same rules, same scoring, same risk.
+    **Deferred activation:** the season requires **at least 4 reservations**
+    to activate. While the field is filling, your launch tx escrows funds
+    and reserves a slot — the token doesn't deploy yet. When the 4th
+    reservation lands, slots 1–4 deploy together and trading begins for
+    all four simultaneously. After activation, slots 5–12 deploy on entry.
+
+    Going early gets you more pre-cut trading time, which is the reward for
+    taking the early-slot risk — but that time is now measured from
+    activation, not from your individual entry tx.
+
+    **If fewer than 4 reservations arrive by Wed 00:00,** the season aborts:
+    every launch cost + stake is refunded automatically, and no tokens are
+    ever deployed.
+
+    On Week 1, the protocol launches `$FILTER` as a protocol-anchored
+    reservation that counts toward the 4-token activation threshold. No
+    special treatment from there on — same rules, same scoring, same risk.
   </Step>
   <Step title="Trading window — Wed 00:00 → Fri 00:00 (48h)">
     Launch window closes. Full field of 12. No eliminations. HP rankings
@@ -76,6 +89,9 @@ for the loop and the maximum for operational simplicity early on.
 | timezone | UTC |
 | anchorDay | Monday |
 | eventsPerSeason | 2 |
+| minReservationsToActivate | 4 |
+| seasonAbortsBelowMinAtWindowClose | true |
+| abortRefundMode | automatic; full launchCost + refundableStake |
 
 ### Phase boundaries (UTC, Monday-aligned)
 
