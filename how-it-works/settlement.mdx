@@ -1,11 +1,187 @@
 ---
 title: "Settlement"
-description: "How the losers pot becomes rollover, hold bonus, POL, and treasury"
+description: "How the losers pot becomes rollover, hold bonus, POL, treasury, and mechanics"
 ---
 
-<Note>
-  Coming soon. The headline split lives on
-  [The filter](/how-it-works/the-filter); the on-chain guarantees
-  are documented at
-  [Settlement security](/security/settlement).
-</Note>
+<Visibility for="humans">
+
+At hour 168, the winner is declared and the losers pot is distributed. This
+page documents the full math: the order of operations, the percentages,
+each line's purpose, and a worked example.
+
+## The losers pot — the Filter Fund
+
+When the bottom 6 tokens are filtered at hour 96, their protocol-controlled
+LP unwinds into WETH. Plus, every swap on every token throughout the week
+routes a 95-bps slice of fees into a season-wide accumulator. At hour 168,
+both flows are pooled into the **Filter Fund** — the WETH that funds
+everything that happens at settlement.
+
+The Filter Fund is the heart of the model. Losers don't disappear; their
+liquidity is recycled into the winner and into the holders who got filtered.
+
+## The split
+
+The 2.5% champion bounty is taken **off the top** before anything else.
+The remaining 97.5% then splits five ways:
+
+<Tabs>
+  <Tab title="Visual">
+    | Allocation | % of remaining | Purpose |
+    | --- | ---: | --- |
+    | Champion bounty | 2.5% (off the top) | Paid to the winning creator's recipient address |
+    | Rollover | 45% | Distributed pro-rata to filtered-token holders via Merkle |
+    | Hold bonus | 25% | Reserved for 14-day holders of the winner |
+    | Mechanics | 10% | Week-specific incentives (events, missions, flash rewards) |
+    | Filter Fund Liquidity Reserve | 10% | Permanent LP backing the winner's pool |
+    | Treasury | 10% | Protocol revenue |
+  </Tab>
+  <Tab title="Worked example">
+    Suppose the season's losers pot is **100 WETH** at settlement.
+
+    ```
+    champion bounty:  100 × 2.5%   =   2.500 WETH  → winner creator
+    remaining pot:    100 − 2.500  =  97.500 WETH
+
+    rollover:         97.500 × 45%  =  43.875 WETH  → filtered holders
+    hold bonus:       97.500 × 25%  =  24.375 WETH  → 14-day holders
+    mechanics:        97.500 × 10%  =   9.750 WETH  → mechanics wallet
+    liq reserve:      97.500 × 10%  =   9.750 WETH  → winner LP
+    treasury:         97.500 × 10%  =   9.750 WETH  → treasury
+                                       -------
+                              total =  97.500 WETH  ✓
+    ```
+
+    Total user-aligned share (rollover + hold bonus + winner LP) = **78%** of
+    the gross pot. Operational + protocol share (mechanics + treasury) = **20%**.
+    Creator bounty = **2.5%**.
+  </Tab>
+</Tabs>
+
+## Each line, what it does
+
+<AccordionGroup>
+  <Accordion title="Champion bounty (2.5%, off the top)">
+    Paid to the winner creator's configured recipient. The bounty is
+    extracted before the standard split, so the rollover/bonus/POL/mechanics/treasury
+    lines all draw from the post-bounty 97.5%.
+
+    The bounty scales with the pot: a quiet week with a 4 WETH pot pays a
+    0.10 WETH bounty; a viral week with a 40 WETH pot pays a 1.00 WETH
+    bounty.
+  </Accordion>
+
+  <Accordion title="Rollover (45%) — pro-rata to filtered holders">
+    The largest single line. The 45% slice market-buys the winner token,
+    then distributes the resulting winner-token shares pro-rata to filtered-token
+    holders via a Merkle airdrop.
+
+    Distribution is **time-weighted**: your effective rollover entitlement
+    uses `min(balance_h72, balance_h96)`, so selling between hours 72 and
+    96 reduces your share. Designed to defeat bank-run dynamics around
+    the cut.
+
+    Try the [rollover calculator](/holders/rollover-calculator) to see how
+    much your position would receive across different week scenarios.
+  </Accordion>
+
+  <Accordion title="Hold bonus (25%) — for 14-day holders">
+    Reserved for any wallet that holds at least 80% of its rolled-in
+    winner-token amount for 14 days post-settlement. Bonus is divided
+    pro-rata among all qualifying holders at the 14-day mark.
+
+    The point: reward conviction. Filtered-token holders who flip out
+    immediately get the rollover but not the bonus; holders who stay get
+    paid for the discipline.
+  </Accordion>
+
+  <Accordion title="Mechanics (10%) — week-specific incentives">
+    A flexible budget for events, missions, flash bonuses, leaderboard
+    rewards. Allocations are operator-decided per week within a fixed
+    cap. Mechanics is the protocol's loosest line — used to keep the
+    week feeling alive between launch and cut.
+  </Accordion>
+
+  <Accordion title="Filter Fund Liquidity Reserve (10%) — permanent winner LP">
+    Deployed into the winner's V4 pool as protocol-owned liquidity.
+    Locked permanently — never withdrawn. This is what turns a winner
+    into a durable asset instead of a one-week novelty.
+
+    Post-settlement, every swap on the winner pool routes a 95-bps fee
+    slice back to the Filter Fund Liquidity Reserve, growing the
+    permanent backing over time.
+  </Accordion>
+
+  <Accordion title="Treasury (10%) — protocol revenue">
+    Routed to the timelocked treasury contract. Funds protocol operations,
+    audits, infrastructure, and future development.
+  </Accordion>
+</AccordionGroup>
+
+## Why this split
+
+Three constraints shaped the percentages:
+
+1. **At least 70% of the gross pot must be user-aligned** — rollover, hold
+   bonus, and winner-pool POL all flow back to users (filtered holders,
+   conviction holders, future winner-pool traders). Current split is 78%.
+2. **The creator bounty needs to bridge incentives without dominating** —
+   2.5% is enough to make winning materially profitable for a creator
+   with a token that found product-market fit, but small enough that
+   creator strategy doesn't distort the holder economics.
+3. **Operational lines stay bounded and observable** — mechanics + treasury
+   together cap at 20%, both routed to public-traceable wallets.
+
+## When settlement runs
+
+Settlement happens at exactly hour 168 (Monday 00:00 UTC). The settlement
+publish path waits ≥12 blocks past the wall-clock boundary before posting
+the rankings Merkle root, so a Base reorg can't put the result at risk.
+See [settlement security](/security/settlement) for the eight invariants
+that gate the publish path and the recovery procedures if any of them
+fails.
+
+</Visibility>
+
+<Visibility for="agents">
+
+## settlement — structured facts
+
+| Field | Value |
+|---|---|
+| settlement_hour | 168 |
+| champion_bounty_bps | 250 |
+| rollover_bps | 4500 |
+| hold_bonus_bps | 2500 |
+| mechanics_bps | 1000 |
+| filter_fund_liquidity_reserve_bps | 1000 |
+| treasury_bps | 1000 |
+| user_aligned_share_pct | 78 |
+| operational_share_pct | 20 |
+| creator_share_pct | 2.5 |
+| time_weight_window | h72 to h96 |
+| time_weight_formula | min(balance_h72, balance_h96) |
+| hold_bonus_min_hold_pct | 80 |
+| hold_bonus_lock_days | 14 |
+| settlement_finality_blocks | 12 |
+| post_settlement_winner_fee_bps_to_liquidity_reserve | 95 |
+
+### Settlement order of operations
+
+1. Wait ≥12 blocks past wall-clock h168 boundary
+2. Verify all 8 settlement-security invariants
+3. Extract `champion_bounty_bps` (250) from gross losers pot → winner creator recipient
+4. Compute `remaining = gross − bounty`
+5. Split `remaining` per the bps table above
+6. Publish rollover + bonus Merkle roots
+7. Deploy Liquidity Reserve as permanent V4 LP on winner pool
+8. Open next season's launch window
+
+### Settlement-security cross-reference
+
+The publish path enforces invariants like `inv_hp_settlement_finality`,
+`inv_merkle_root_published_once_per_season`, and
+`inv_no_double_distribution`. Full list at
+[/security/settlement](/security/settlement).
+
+</Visibility>

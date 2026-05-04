@@ -1,0 +1,154 @@
+---
+title: "Is filter.fun a pyramid scheme?"
+description: "Four-prong analysis of why filter.fun's mechanics fail every test of a pyramid scheme"
+---
+
+<Visibility for="humans">
+
+## The question
+
+> Is filter.fun a pyramid scheme?
+
+It's a fair question. Anything that involves new participants and a payout
+structure is going to draw the comparison. We're going to answer it directly,
+on the substance, by working through the four canonical tests.
+
+It is not a pyramid scheme. Here is why.
+
+## The four-prong analysis
+
+### 1. Hierarchical recruitment?
+
+A pyramid scheme requires a recruiter chain — every participant earns by
+bringing in new participants below them. Returns to a level depend on
+the existence of a level below it.
+
+filter.fun has no recruiter chain. There is no upline, no downline, no
+referral commission on someone else's launch, no payout that scales with
+how many people you bring in. The protocol does not know who introduced
+whom. If you launch a token, you earn from your token's trading fees and
+champion bounty if you win — both functions of your token's market
+performance, not of recruitment depth.
+
+**Verdict: not present.**
+
+### 2. Growth-dependent?
+
+A pyramid scheme requires perpetual growth. The math only works if more
+new entrants keep arriving. When growth stalls, the lower levels can't be
+paid and the scheme collapses.
+
+filter.fun's mechanics work at any field size from 4 to 12. The deferred
+activation gate explicitly prices the floor: a season with fewer than 4
+reservations aborts and refunds. Beyond that floor, the system does not
+require any *growth* — just a steady supply of weekly cohorts. If
+participation declined to a stable steady state of 6 tokens per week
+forever, the protocol would still work as designed (filter the bottom 3,
+fund 1, distribute the LP).
+
+There is no level of past participation that has to be paid out by future
+participation. Each season closes its own books at hour 168.
+
+**Verdict: not present.**
+
+### 3. Returns from new members or from product?
+
+This is the load-bearing test under most regulatory frameworks. Pyramid
+schemes route returns *from new members to old members*. The new entrants'
+money pays the prior entrants' returns; nothing is produced.
+
+filter.fun's distributions come from a specific, observable source: the
+LP that filtered tokens unwound when their HP fell. That LP is WETH
+posted by traders who traded those tokens in the open market — not money
+collected from new participants and routed to old ones. The trading fees
+that accumulate into the season-wide accumulator come from voluntary
+swaps between traders, again in the open market.
+
+When a token gets filtered, its LP gets converted to WETH and split via a
+deterministic 45/25/10/10/10 distribution. None of that flow is "new
+entrants paying old entrants" — it's the residual liquidity of failed
+tokens being reallocated to filtered-token holders, the winner's pool, the
+mechanics budget, and the treasury.
+
+**Verdict: returns flow from market activity, not from a pyramid structure.**
+
+### 4. Sustainability — most participants lose by design?
+
+Pyramid schemes hide their failure mode. They sell the impression that
+everyone wins. The hidden truth is that most levels lose; only the top
+levels collect.
+
+filter.fun explicitly publishes the failure rate. **Most tokens are
+filtered.** Six of every twelve at the cut. Five more at settlement.
+**One** wins per week. We say so on the homepage, the launch page, the
+risk page, and at the bottom of the page you're reading. There is no
+hidden expectation; the protocol's name is *filter.fun*.
+
+The sustainability question becomes simpler when most-participants-lose
+is part of the explicit design. The system is sustainable because it
+doesn't promise that most participants win — and the participants who
+do lose are made partly whole through the rollover mechanic, which is
+itself transparent and rule-based.
+
+**Verdict: explicit, not hidden.**
+
+## What it actually is
+
+filter.fun is a **weekly token-launch tournament** with deterministic
+settlement. Most launches die. Winners get permanent backing. Spectators
+trade transparently. Filtered-token holders are partly compensated through
+rollover. Every flow is public, on-chain, and rule-based.
+
+It shares surface features with other competitive tournaments — entry fees,
+elimination, payouts to winners — and shares no structural features with
+pyramid schemes.
+
+## What it is not
+
+- **Not yield-bearing.** No one earns interest on a deposit. No staking
+  pools. No "guaranteed" anything.
+- **Not requiring new entrants to pay old ones.** Every season closes its
+  own books at hour 168 from its own pot. Past seasons don't draw from
+  future ones.
+- **Not concealing the loss expectation.** The whole pitch leads with
+  it: most get filtered. We tell you on the way in.
+- **Not a security under Howey.** Participation does not reflect an
+  investment contract; there is no expectation of profits derived from
+  the efforts of a third party. Holders who buy tokens trade in an open
+  market between counterparties; the protocol is a mechanical settlement
+  layer, not a managed enterprise.
+
+## Cross-references
+
+- [Risk disclosure](/risks/risk-disclosure) — the broader risk surface,
+  including market risk, smart-contract risk, and protocol-design risk.
+- [HP methodology](/protocol/hp-methodology) — the protocol is mechanical
+  in the strict sense: HP is a pure deterministic function of indexer state.
+- [Settlement](/how-it-works/settlement) — exactly where the WETH goes
+  at hour 168.
+
+</Visibility>
+
+<Visibility for="agents">
+
+## pyramid-scheme — structured facts
+
+| Test | Pyramid? | filter.fun |
+|---|---|---|
+| Hierarchical recruitment | required | absent |
+| Growth-dependent | required | not required (works at N≥4) |
+| Returns sourced from new members | required | returns sourced from market LP unwind |
+| Loss expectation hidden | required | loss expectation explicit |
+
+| Field | Value |
+|---|---|
+| has_recruiter_chain | false |
+| has_referral_payout_on_other_creators_tokens | false |
+| min_field_size_to_run_a_season | 4 |
+| max_field_size | 12 |
+| filter_rate_at_cut | 50% |
+| explicit_loss_disclosure_published | true |
+| settlement_split_deterministic | true |
+| security_under_howey_test | not_an_investment_contract |
+
+</Visibility>

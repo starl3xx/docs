@@ -1,10 +1,109 @@
 ---
 title: "Quickstart"
-description: "Get into a season in five minutes"
+description: "What filter.fun is and how to participate, in five minutes"
 ---
 
-<Note>
-  Coming soon. In the meantime, [The filter](/how-it-works/the-filter)
-  covers the core mechanic and [Launch a token](/creators/launch-a-token)
-  walks through the launch flow.
-</Note>
+> *Get filtered or get funded ▼*
+
+## What it is
+
+filter.fun is a weekly token-launch tournament on Base. Every week, up to 12 tokens launch, half get filtered at hour 96, and one wins at hour 168. The losers' liquidity flows to the winner and to the holders who got filtered.
+
+We've solved launchpads.
+
+## The week in 5 beats
+
+<Steps>
+  <Step title="Mon 00:00 UTC — reservations open">
+    Launch window opens. Creators reserve slots on a first-come, first-served
+    basis with a dynamic launch cost. Tokens don't deploy yet — they wait for
+    the season to activate.
+  </Step>
+  <Step title="Mon → Wed (h0 → h48) — activation gate">
+    The season activates the moment the **4th reservation** lands. Slots 1–4
+    deploy together; trading begins. Slots 5–12 deploy on entry. If fewer than
+    4 reservations arrive by Wed 00:00, the season aborts and every escrowed
+    fee + stake refunds automatically.
+  </Step>
+  <Step title="Wed → Fri (h48 → h96) — trading window">
+    Full field, no eliminations. HP rankings update every 5 minutes. Last-slot
+    launchers get an equal-footing 48 hours of trading before the cut.
+  </Step>
+  <Step title="Fri 00:00 UTC (h96) — the cut">
+    HP snapshot. The bottom half of the field is filtered. Their LP unwinds
+    into WETH and feeds the losers pot. Six survivors enter finals.
+  </Step>
+  <Step title="Mon 00:00 UTC (h168) — settlement">
+    The top-HP token wins the week. Permanent liquidity backs the winner pool.
+    Filtered-token holders roll into the winner pro-rata. The 14-day hold-bonus
+    clock starts. The next season's launch window opens immediately.
+  </Step>
+</Steps>
+
+## Three paths to participate
+
+<CardGroup cols={3}>
+  <Card title="Spectator" icon="eye" href="/how-it-works/the-filter">
+    Read the leaderboard, watch HP move, follow the ticker. The Arena page
+    is the live view. Trading any token is permissionless — connect a wallet
+    and swap.
+  </Card>
+  <Card title="Holder" icon="wallet" href="/holders/rollover-calculator">
+    Buy a token before the cut. If it gets filtered, your position rolls into
+    the winner. Hold the rollover for 14 days to claim the hold bonus.
+  </Card>
+  <Card title="Creator" icon="rocket" href="/creators/launch-a-token">
+    Reserve a slot, launch a token, and earn 0.20% of every trade in
+    perpetuity if you win. 2.5% champion bounty on top.
+  </Card>
+</CardGroup>
+
+## How HP decides who survives
+
+HP is a 0–10000 integer that combines five active on-chain signals: velocity,
+effective buyers, sticky liquidity, retention, and holder concentration.
+Weights are empirically fit, the formula is open, and live values are queryable.
+Read the full methodology if you want to verify how the numbers were derived
+and how the engine matches the published math.
+
+## Where to learn more
+
+<CardGroup cols={2}>
+  <Card title="The filter mechanic" href="/how-it-works/the-filter">
+    What happens when a token is filtered, and why filtered tokens stay tradable.
+  </Card>
+  <Card title="Season cadence" href="/how-it-works/season-cadence">
+    The week, hour by hour. Reservation, activation, cut, settlement.
+  </Card>
+  <Card title="HP methodology" href="/protocol/hp-methodology">
+    The five components, the locked formula constants, and how to verify.
+  </Card>
+  <Card title="Risks" href="/risks/risk-disclosure">
+    What you can lose. Most tokens are filtered. There is no "safe" position.
+  </Card>
+</CardGroup>
+
+<Visibility for="agents">
+
+## quickstart — structured facts
+
+| Fact | Value |
+|---|---|
+| chain | Base (mainnet target) |
+| season_duration_hours | 168 |
+| launch_window_hours | 48 |
+| min_reservations_to_activate | 4 |
+| max_tokens_per_season | 12 |
+| max_launches_per_wallet_per_week | 1 |
+| hp_score_range | 0–10000 (integer) |
+| cut_hour | 96 |
+| settlement_hour | 168 |
+| filter_ratio | 50% (bottom half at cut) |
+| winner_per_season | 1 |
+| canonical_arena_url | https://filter.fun |
+| canonical_docs_url | https://docs.filter.fun |
+| canonical_indexer_api | https://api.filter.fun |
+
+</Visibility>
+
+> Most get filtered. One gets funded.

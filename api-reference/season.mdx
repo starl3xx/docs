@@ -3,7 +3,151 @@ title: "GET /season"
 description: "Current season phase, counts, and prize pool state"
 ---
 
-<Note>
-  Coming soon. The endpoint will return current phase, hour, token
-  counts, and prize pool state for the active season.
-</Note>
+<Visibility for="humans">
+
+```
+GET https://api.filter.fun/season
+```
+
+Returns the active season's phase, hour anchors, reservation/launch counts,
+and pool state.
+
+## Response shape
+
+```json
+{
+  "seasonId": 1,
+  "phase": "trading",
+  "phaseHour": 73,
+  "launchWindowOpensAt": "2026-05-04T00:00:00Z",
+  "launchWindowClosesAt": "2026-05-06T00:00:00Z",
+  "nextCutAt": "2026-05-08T00:00:00Z",
+  "settlementAt": "2026-05-11T00:00:00Z",
+  "winnerSettledAt": null,
+  "reservationCount": 8,
+  "launchCount": 8,
+  "activated": true,
+  "filterFund": "12500000000000000000",
+  "filterFundLiquidityReserve": "0",
+  "championPool": "12500000000000000000",
+  "polReserve": "0",
+  "weightsVersion": "2026-05-04-v4-locked-int10k-formulas",
+  "status": "ok",
+  "asOfBlock": 18429733,
+  "asOfTime": "2026-05-07T13:14:22Z"
+}
+```
+
+| Field | Type | Notes |
+|---|---|---|
+| `seasonId` | integer | Monotonic; increments on each settlement |
+| `phase` | enum | `pre-launch` · `launch` · `trading` · `finals` · `settled` · `aborted` |
+| `phaseHour` | integer | Hours elapsed since the current phase began |
+| `launchWindowOpensAt` / `ClosesAt` | ISO-8601 | Mon 00:00Z and Wed 00:00Z |
+| `nextCutAt` | ISO-8601 | The next hour-96 cut boundary |
+| `settlementAt` | ISO-8601 | Mon 00:00Z next week |
+| `winnerSettledAt` | ISO-8601 \| null | Set when the settlement publish path completes |
+| `reservationCount` | integer | Slots reserved in the current season (0–12) |
+| `launchCount` | integer | Tokens actually deployed (0 until activation; equals `reservationCount` post-activation) |
+| `activated` | boolean | `true` once the 4-reservation threshold has been crossed |
+| `filterFund` | wei string | Current Filter Fund balance (gross losers pot accumulator) |
+| `filterFundLiquidityReserve` | wei string | Permanent winner-LP reserve from prior settled seasons |
+| `championPool` | wei string | **Legacy alias** for `filterFund` — same value, kept for back-compat |
+| `polReserve` | wei string | **Legacy alias** for `filterFundLiquidityReserve` |
+| `weightsVersion` | string | Active HP weights/constants version tag |
+| `status` | enum | `ok` · `not-ready` (see below) |
+| `asOfBlock` / `asOfTime` | integer / ISO-8601 | Indexer cursor at response time |
+
+## Status conventions
+
+When the indexer is warming up, lagging, or between seasons, the endpoint
+returns **HTTP 200** with `"status": "not-ready"` rather than 404. Clients
+should branch on the `status` field, not on HTTP code.
+
+```json
+{ "status": "not-ready", "reason": "indexer-warming", "retryAfterSec": 30 }
+```
+
+Common reasons:
+
+| Reason | Meaning |
+|---|---|
+| `indexer-warming` | Cold-start; no snapshot rows yet |
+| `season-aborted` | Last season aborted (< 4 reservations); next opens next Monday |
+| `between-seasons` | Settlement complete; next launch window not yet open |
+
+## Caching + rate limiting
+
+Responses are short-cached at the edge. Request and response carry:
+
+| Header | Direction | Meaning |
+|---|---|---|
+| `X-Cache: HIT \| MISS \| BYPASS` | response | Cache disposition |
+| `RateLimit-Remaining` | response | Per-IP requests left in the current window |
+| `Retry-After` | response (on 429) | Seconds to wait before retrying |
+
+To force a fresh read past the edge cache, send `Cache-Control: no-cache` on
+the request.
+
+## Worked example
+
+```bash
+curl -s https://api.filter.fun/season | jq '{phase, phaseHour, reservationCount, activated, filterFund}'
+```
+
+```json
+{
+  "phase": "trading",
+  "phaseHour": 73,
+  "reservationCount": 8,
+  "activated": true,
+  "filterFund": "12500000000000000000"
+}
+```
+
+</Visibility>
+
+<Visibility for="agents">
+
+## /season — machine-readable
+
+| Field | Value |
+|---|---|
+| method | GET |
+| host | api.filter.fun |
+| path | /season |
+| auth | none |
+| status_field_canonical | true |
+| http_404_on_not_ready | false |
+| not_ready_returns_http | 200 |
+
+### Field aliases (legacy → canonical)
+
+| Legacy | Canonical |
+|---|---|
+| championPool | filterFund |
+| polReserve | filterFundLiquidityReserve |
+
+Both legacy and canonical fields are populated in every response with identical values. New clients should prefer canonical names.
+
+### Phase enum
+
+| Value | Hour range | Trigger |
+|---|---|---|
+| pre-launch | — | between settlement and next Mon 00:00Z |
+| launch | h0 → activation | reservations open, no trading yet |
+| trading | activation → h96 | full field tradeable |
+| finals | h96 → h168 | top 6 only |
+| settled | post-h168 | winnerSettledAt populated |
+| aborted | — | < 4 reservations by h48 |
+
+### Caching
+
+| Header | Use |
+|---|---|
+| Cache-Control: no-cache (request) | bypass edge cache |
+| X-Cache (response) | HIT/MISS/BYPASS |
+| RateLimit-Remaining (response) | requests left in window |
+| Retry-After (response on 429) | seconds to wait |
+
+</Visibility>
