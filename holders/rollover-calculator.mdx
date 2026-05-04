@@ -9,6 +9,16 @@ export const RolloverCalculator = () => {
   const [yourPct, setYourPct] = React.useState(10);
   const [winnerMcap, setWinnerMcap] = React.useState(50000);
   const [ethPrice, setEthPrice] = React.useState(3500);
+  const [isDark, setIsDark] = React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const check = () => setIsDark(document.documentElement.classList.contains('dark'));
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => obs.disconnect();
+  }, []);
 
   const filteredCount = Math.floor(tokens / 2);
   const totalFilteredLp = filteredCount * avgLp;
@@ -43,8 +53,14 @@ export const RolloverCalculator = () => {
   const presetAvg = () => { setTokens(12); setAvgLp(3.0); setYourPct(10); setWinnerMcap(50000); };
   const presetViral = () => { setTokens(12); setAvgLp(8.0); setYourPct(10); setWinnerMcap(250000); };
 
-  const cardBg = 'rgba(127, 127, 127, 0.1)';
-  const borderC = 'rgba(127, 127, 127, 0.25)';
+  const cardBg = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
+  const borderC = isDark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(0, 0, 0, 0.12)';
+  const pinkBg = isDark ? 'rgba(255, 58, 161, 0.20)' : 'rgba(255, 58, 161, 0.10)';
+  const greenBg = isDark ? 'rgba(124, 214, 68, 0.22)' : 'rgba(75, 167, 50, 0.13)';
+  const pinkText = isDark ? '#ff7fc8' : '#993556';
+  const greenText = isDark ? '#9be371' : '#3b6d11';
+  const pinkHeading = '#ff3aa1';
+  const greenHeading = isDark ? '#7cd644' : '#52a832';
   const muted = { opacity: 0.7 };
   const btn = { flex: 1, fontSize: '13px', padding: '8px 12px', background: 'transparent', border: `0.5px solid ${borderC}`, borderRadius: '8px', cursor: 'pointer', color: 'inherit' };
   const row = { display: 'grid', gridTemplateColumns: '220px 1fr 90px', alignItems: 'center', gap: '12px' };
@@ -113,15 +129,15 @@ export const RolloverCalculator = () => {
         <div style={{ fontSize: '14px', fontWeight: 500, marginBottom: '12px' }}>Your slice as a filtered-token holder</div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-          <div style={{ background: 'rgba(255, 58, 161, 0.13)', padding: '14px', borderRadius: '8px' }}>
-            <div style={{ fontSize: '12px', color: '#ff3aa1', marginBottom: '4px' }}>Rollover share</div>
-            <div style={{ fontSize: '22px', fontWeight: 500, color: '#ff3aa1' }}>{fmtEth(yourRolloverEth)}</div>
-            <div style={{ fontSize: '13px', color: '#ff3aa1', opacity: 0.85, marginTop: '2px' }}>{fmtUsd(yourRolloverEth * ethPrice)}</div>
+          <div style={{ background: pinkBg, padding: '14px', borderRadius: '8px' }}>
+            <div style={{ fontSize: '12px', color: pinkHeading, marginBottom: '4px' }}>Rollover share</div>
+            <div style={{ fontSize: '22px', fontWeight: 500, color: pinkText }}>{fmtEth(yourRolloverEth)}</div>
+            <div style={{ fontSize: '13px', color: pinkText, opacity: 0.85, marginTop: '2px' }}>{fmtUsd(yourRolloverEth * ethPrice)}</div>
           </div>
-          <div style={{ background: 'rgba(75, 167, 50, 0.16)', padding: '14px', borderRadius: '8px' }}>
-            <div style={{ fontSize: '12px', color: '#52a832', marginBottom: '4px' }}>+ Hold bonus (if held 14 days)</div>
-            <div style={{ fontSize: '22px', fontWeight: 500, color: '#52a832' }}>{fmtEth(yourBonusEth)}</div>
-            <div style={{ fontSize: '13px', color: '#52a832', opacity: 0.85, marginTop: '2px' }}>{fmtUsd(yourBonusEth * ethPrice)}</div>
+          <div style={{ background: greenBg, padding: '14px', borderRadius: '8px' }}>
+            <div style={{ fontSize: '12px', color: greenHeading, marginBottom: '4px' }}>+ Hold bonus (if held 14 days)</div>
+            <div style={{ fontSize: '22px', fontWeight: 500, color: greenText }}>{fmtEth(yourBonusEth)}</div>
+            <div style={{ fontSize: '13px', color: greenText, opacity: 0.85, marginTop: '2px' }}>{fmtUsd(yourBonusEth * ethPrice)}</div>
           </div>
         </div>
 
