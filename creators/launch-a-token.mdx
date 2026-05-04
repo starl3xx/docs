@@ -20,14 +20,35 @@ Launching a token costs:
 - **A refundable stake** equal to the launch cost, held until Friday's
   cut and returned if your token survives into the top 6
 
-You launch directly into a real Uniswap V4 pool. As soon as your tx
-confirms, your token is tradable on the Arena and your HP starts
-updating. There is no draft state, no review, no delay.
+You launch directly into a real Uniswap V4 pool. The token deploys, the
+LP seeds, and trading begins — no draft state, no review.
 
 You only get **one launch per wallet per week**. This is a hard
 cap — the contract reverts a second attempt with `LaunchCapReached`.
 If you want to ship two ideas in a week, you need a second wallet
 and a different ticker.
+
+## Deferred activation: the 4-token threshold
+
+A season requires **at least 4 valid reservations** to activate. While
+the launch window is open, your launch tx escrows your funds and
+**reserves** a slot — your token does not deploy yet.
+
+- When the **4th reservation** lands, the season **activates**: slots
+  1–4 deploy together, LPs seed, and trading begins simultaneously
+  for all four.
+- After activation, slots 5–12 deploy on entry — same as a normal
+  first-come-first-served grid.
+- If fewer than 4 reservations arrive by **Wed 00:00 UTC** (the launch
+  window close), the season **aborts**: every escrowed launch cost +
+  stake refunds automatically. No tokens are ever deployed; no LPs
+  exist to unwind.
+
+This means going early is a real bet on the field filling. Slots 1–3
+might wait hours for activation; if the field stalls, you get every ETH
+back. On Week 1, `$FILTER` counts toward the 4-token threshold as a
+protocol-launched anchor token — see
+[Season cadence](/how-it-works/season-cadence).
 
 ## The slot grid
 
@@ -58,11 +79,11 @@ base cost; slot 12 is approximately **1.84× base**. The shape is
 quadratic — the curve is gentle for the first several slots and steepens
 toward the end.
 
-| Slot | Multiplier | Example (base = 0.05 ETH) |
+| Slot | Multiplier | Example (base = 0.01 ETH) |
 | ---: | ---: | ---: |
-| 1 | 1.00× | 0.050 ETH |
-| 6 | 1.25× | 0.063 ETH |
-| 12 | 1.84× | 0.092 ETH |
+| 1 | 1.00× | 0.010 ETH |
+| 6 | 1.17× | 0.012 ETH |
+| 12 | 1.84× | 0.018 ETH |
 
 The cost panel on the launch form shows the live total: launch cost +
 refundable stake. If a slot is claimed while you're filling out the form,
@@ -181,25 +202,29 @@ your per-token cockpit for HP, fee claims, and admin actions.
 | launch_window_hours | 48 |
 | launch_window_open_utc | Mon 00:00 (anchored weekly) |
 | max_tokens_per_season | 12 |
+| min_tokens_to_activate | 4 |
 | max_launches_per_wallet_per_week | 1 |
 | ticker_unique_per_season | true |
 | metadata_required_fields | name, ticker, description, image |
 | metadata_optional_fields | website, x, farcaster |
 | metadata_storage | IPFS (URI stored on-chain as opaque string) |
 | canonical_pitch_required_in_form | "I understand most tokens get filtered ▼" |
-| trading_starts_at | tx confirmation (no draft state) |
+| trading_starts_at | activation (4th reservation lands) for slots 1–4; tx confirmation for slots 5–12 |
+| season_aborts_below_min_at_window_close | true |
+| abort_refund_mode | automatic; full launchCost + refundableStake |
 
 ### Cost formula
 
 ```text
+BASE_LAUNCH_COST = 0.01 ETH
 launchCost = BASE_LAUNCH_COST × (1 + (slotIndex / 12)²)
 ```
 
-| slotIndex | multiplier_vs_base |
-| ---: | ---: |
-| 0 | 1.00 |
-| 5 | 1.17 |
-| 11 | 1.84 |
+| slotIndex | multiplier_vs_base | example_eth |
+| ---: | ---: | ---: |
+| 0 | 1.00 | 0.0100 |
+| 5 | 1.17 | 0.0117 |
+| 11 | 1.84 | 0.0184 |
 
 ### Refundable stake
 

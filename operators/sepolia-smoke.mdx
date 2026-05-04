@@ -20,7 +20,7 @@ re-run from the failed step.
 - [ ] Foundry ≥ 1.0 (`foundryup` if needed). The deploy uses cheatcodes that landed in late 2025.
 - [ ] `jq` on PATH (the wrapper script reads the manifest with it).
 - [ ] Node ≥ 20 + npm. Workspaces are configured at the monorepo root.
-- [ ] Funded deployer key on Base Sepolia. ~0.5 ETH recommended (0.05 ETH per launch slot * a handful of launches + gas headroom for the deploy itself, which is ~12 contracts).
+- [ ] Funded deployer key on Base Sepolia. ~0.2 ETH recommended (0.01 ETH base × ~5 launches × 2 for refundable-stake-on, plus gas headroom for the deploy itself, which is ~12 contracts).
 - [ ] Basescan API key. Tier doesn't matter; verification is rate-limit friendly.
 - [ ] Canonical Base Sepolia addresses on hand (V4 PoolManager, WETH9). The example env file (`.env.sepolia.example`) ships with current values; double-check before each deploy in case Uniswap rotates a deployment.
 
@@ -103,19 +103,19 @@ Open a fresh wallet (not the deployer) and exercise the per-wallet cap:
 # Wallet A: launches a token. Should succeed.
 cast send $LAUNCHER 'launchToken(string,string,string)' \
   "Token A" "TOKA" "ipfs://meta-a" \
-  --value 0.05ether \
+  --value 0.02ether \
   --rpc-url $BASE_SEPOLIA_RPC_URL --private-key $WALLET_A_KEY
 
 # Wallet A again: must REVERT (LaunchCapReached) — Sepolia cap is 1.
 cast send $LAUNCHER 'launchToken(string,string,string)' \
   "Token A2" "TOKA2" "ipfs://meta-a2" \
-  --value 0.05ether \
+  --value 0.02ether \
   --rpc-url ... --private-key $WALLET_A_KEY
 ```
 
 - [ ] First call succeeds, emits `TokenLaunched(seasonId=1, ..., creator=A)`.
 - [ ] Second call reverts with `LaunchCapReached`.
-- [ ] At least 2 distinct wallets each launched 1 token; we want ≥3 tokens in the season so the soft-filter has something to filter.
+- [ ] At least 4 distinct wallets each launched 1 token (the activation threshold; $FILTER from step 4 counts as one). The season won't activate — and tokens won't deploy — until the 4th reservation lands.
 
 ## 6. Sync indexer + web
 
