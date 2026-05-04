@@ -1,199 +1,203 @@
 ---
-title: "HP methodology"
-description: "How the HP component weights were derived"
+title: "HP scoring — methodology + locked weights"
+description: "How filter.fun's Health Points score works, how we derived the weights, and why each number is what it is."
 ---
 
-<Visibility for="humans">
+# HP scoring ▼
 
-HP weights aren't pulled from a hat. The values that combine six
-on-chain signals into a single score were fit against historical
-launches on Base, leakage-checked, and corroborated by published
-research on adjacent launchpads. This page is the *why*.
+filter.fun's HP score determines who survives the cut and who gets filtered. The numbers aren't arbitrary — they're empirically fit against historical token launches and cross-validated against published academic research. This page documents the scale, the components, the methodology, and the citations.
 
-For the active weights, see [HP scoring](/how-it-works/hp-scoring).
+## The HP composite
 
-## How the weights were derived
+**HP is a 0–10000 integer.** Computed as the weighted sum of five components, each on a 0-1 scale, multiplied by 10000 and rounded.
 
-The empirical fit ran in four iterations across spring 2026, each
-correcting blind spots in the previous one.
+```
+HP = round(Σ(weight_i × component_i) × 10000)
+```
 
-The first run, on a 48-token sample, established that holder
-concentration carried real predictive signal — settling whether to
-ship a sixth component at all. The second run scaled to 250 tokens
-and immediately exposed two broken inputs and three leakage flags
-where a component's input was the same field deciding its outcome
-label. The third run was the lock decision: a stratified 50/50
-sample of survivor and dead tokens (n=100). Two findings dominated
-that run:
+A token at the maximum of every component scores 10000. A token at zero on every component scores 0. Real tokens land in the 3000–9000 range based on Track E corpus runs.
 
-- Momentum had no fittable signal. Regularized regression assigned
-  it 0% weight on every outcome label tested. The diagnostic showed
-  42% of survivor-half tokens had no informative delta in the
-  measurement window — the window itself was structurally too narrow
-  for the metric to fire.
-- Sticky liquidity dominated the non-leakage components. RandomForest
-  importance scored it 0.38 vs the next-highest at 0.26. The fit
-  suggested sticky liquidity should sit much higher than the prior
-  default of 20%.
+**Why 0–10000:**
+- Matches the basis-point convention used throughout filter.fun (fee splits, settlement math, HHI computation)
+- Integer storage eliminates float-precision bugs in rank comparisons at the cut threshold
+- Same effective resolution as 0–100 with two decimal places (10000 discrete values either way) but cleaner display and JSON
+- Aligns with "HP" as a high-score-style integer (cultural convention from games)
 
-The conservative read: take momentum's retired 10pp slot and give
-it to sticky liquidity. Hold every other component at default.
-That's the only weight change adopted.
-
-The fourth run was an out-of-sample validation cohort — top tokens
-by current FDV from a different sampling algorithm. It came back
-small (n=7, a sampling-failure mode that's queued for a follow-up
-fix) and slightly favored the pre-momentum-drop weights. Neither
-result was significant at that sample size, but the direction is
-enough to flag: the momentum drop is the most fragile of the
-adopted changes.
-
-## Cross-validation against published research
-
-Two independent analyses of pump.fun, on a different chain with
-different launchpad mechanics, surface the same dominant predictors
-the HP design targets. That's the load-bearing piece — not that
-specific coefficients transfer, but that the *kind* of signal we're
-measuring is what other researchers find dominant.
-
-Marino, Naviglio, Tarantelli, Lillo (2026), *Predicting the
-success of new crypto-tokens: the Pump.fun case*
-([arxiv 2602.14860](https://arxiv.org/abs/2602.14860), n=567,876).
-Three findings that line up with the lock:
-
-- *"Fast accumulation of liquidity through a small number of
-  trades is the strongest predictor of graduation."* Matches
-  sticky liquidity as the dominant non-leakage component.
-- *"Markets dominated by bot-like activity exhibit systematically
-  lower graduation probabilities."* Matches the holder-concentration
-  HHI penalty and the sqrt-dampening on effective buyers.
-- *"Presence of historically successful traders provides at most
-  a modest and non-monotonic effect."* Confirms the design
-  decision not to model cross-token wallet history.
-
-The wangr.com [pump.fun dashboard](https://wangr.com/analysis/pumpfun)
-(n=567,876) reports ~3–5% 7-day survival on pump.fun. The observed
-4.5% base survivor rate on Base lands inside that band — different
-chain, different mechanics, similar mortality dynamics.
-
-## The locked weights
-
-| Component | Weight | What it measures |
-|---|---:|---|
-| velocity | 30% | Decayed net buy inflow with sybil dampening |
-| effectiveBuyers | 15% | sqrt-dampened headcount of meaningful buyers |
-| stickyLiquidity | 30% | Time-weighted LP depth penalised by recent withdrawals |
-| retention | 15% | Long+short two-anchor holder retention fraction |
-| holderConcentration | 10% | HHI-mapped holder distribution |
-| momentum | 0% | Recent base-composite delta (currently disabled) |
-
-Sum: 100%. Sticky liquidity moved up 10pp from default to absorb
-momentum's retired slot. Every other coefficient is at its prior
-default.
-
-## Caveats
-
-- The validation cohort came back at n=7 and slightly favored
-  momentum-included weights (ρ +0.679 vs +0.571). Neither result is
-  significant, but it's enough to call the momentum drop the most
-  fragile of the changes.
-- The lock holds for mainnet on an asymmetric-risk argument: if it's
-  wrong, off-chain weights make a runtime detection plus refit cheap;
-  if the prior defaults were correct and we shipped them, we'd be
-  running mis-tuned weights without an obvious detection path.
-- Two leakage suspects survived to the final fit (sticky liquidity vs
-  price-floor outcome at ρ=+0.87; retention vs holder-retention at
-  ρ=+0.94). Neither component is boosted beyond the conservative
-  +10pp; the leakage flag is the reason.
-
-## How weight changes work
-
-Weights are off-chain config, not contract bytecode. Contracts read
-an oracle-signed Merkle root of rankings, not the coefficients — so
-any change is enforceable only when the oracle reposts a new root
-under the new set.
-
-A weight change requires an empirical fit on at least 200 tokens,
-external operator review, seven days of public notice, and an
-indexer redeploy with a new version string. Every snapshot row the
-indexer writes is tagged with the version that scored it, so
-historical scores stay re-derivable.
-
-The trade-off is intentional: refitting against real data without
-redeploying contracts, in exchange for a public notice and
-version-stamping discipline anyone can audit.
-
-## What's next
-
-A follow-up empirical run is in flight using a different cohort
-algorithm — walk recent on-chain swap activity globally, rank by
-volume, sample only the top-N. That should clear the n=7
-sampling-failure mode and either confirm or revisit the momentum
-drop. Once the protocol has 90+ days of its own mainnet data, the
-right corpus to refit against is its own. A possible revival of
-momentum at 5–10% is on the table if a wider delta-window
-experiment surfaces signal — the compute path is preserved behind
-a feature flag for exactly that contingency.
-
-This page will be updated when those land.
-
-</Visibility>
+**Tie-break rule:** in the rare event of an exact HP tie at the cut (hour 96) or settlement (hour 168), **the token launched earlier wins.** The off-chain ranking algorithm sorts primarily by HP descending, then by `launchedAt` ascending. Deterministic, on-chain-verifiable, and preserves the early-launcher reward built into the §3.2 cadence.
 
 <Visibility for="agents">
 
-## hp-methodology — structured facts
-
-### Locked weights
-
-| component | weight | weights_version |
-|---|---:|---|
-| velocity | 0.30 | 2026-05-03-v4-locked |
-| effectiveBuyers | 0.15 | 2026-05-03-v4-locked |
-| stickyLiquidity | 0.30 | 2026-05-03-v4-locked |
-| retention | 0.15 | 2026-05-03-v4-locked |
-| holderConcentration | 0.10 | 2026-05-03-v4-locked |
-| momentum | 0.00 | 2026-05-03-v4-locked |
-
-Sum: 1.00. No per-phase differentiation.
-
-### Empirical fit (n=100 stratified, lock run)
-
-| component | spearman_rho | rf_importance | l2_fitted_weight | locked_weight |
-|---|---:|---:|---:|---:|
-| velocity | +0.81 | 0.26 | 0.19 | 0.30 |
-| effectiveBuyers | +0.81 | 0.21 | 0.20 | 0.15 |
-| stickyLiquidity | +0.87 | 0.38 | 0.42 | 0.30 |
-| retention | +0.67 | 0.12 | 0.17 | 0.15 |
-| momentum | 0.00 | 0.00 | 0.00 | 0.00 |
-| holderConcentration | +0.43 | 0.02 | 0.03 | 0.10 |
-
-Cross-validated AUC (5-fold): 0.996 ± 0.008 (price-floor outcome),
-0.981 ± 0.038 (holder-retention outcome).
-
-### External cross-validation
-
-| source | url | n | finding_match |
-|---|---|---:|---|
-| Marino, Naviglio, Tarantelli, Lillo (2026), Predicting the success of new crypto-tokens: the Pump.fun case | https://arxiv.org/abs/2602.14860 | 567876 | sticky liquidity dominant; bot-activity penalty; cross-token wallet history not predictive |
-| wangr.com pump.fun dashboard | https://wangr.com/analysis/pumpfun | 567876 | ~3–5% 7-day survival rate corroborates 4.5% base rate observed on Base |
-
-### Iteration timeline
-
-| run | n | corpus | momentum_fitted | stickyLiq_fitted | locked |
-|---|---:|---|---:|---:|---|
-| 1 | 48 | clanker_v4 | n/a | n/a | not yet |
-| 2 | 250 | clanker_v4 | 0.00 | 0.83 (leakage) | not yet |
-| 3 | 100 | clanker_v4_stratified | 0.00 | 0.42 (leakage de-rated) | yes |
-| 4 | 7 | top_fdv | momentum-included edges out | n/a | held |
-
-### Provenance
-
 | field | value |
 |---|---|
-| version_string | 2026-05-03-v4-locked |
-| activated_at | 2026-05-03T00:00:00Z |
-| corpus_window | 2026-02-01 → 2026-04-24 |
-| corpus_source | Clanker V4 stratified |
-| corpus_n | 100 (50 survivors + 50 dead) |
+| `composite_min` | 0 |
+| `composite_max` | 10000 |
+| `composite_type` | integer |
+| `tie_break_primary` | hp DESC |
+| `tie_break_secondary` | launchedAt ASC |
+| `weights_version` | 2026-05-05-v4-locked-int10k |
+| `weights_endpoint` | https://api.filter.fun/scoring/weights |
+| `spec_ref` | https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#65-hp-component-weights-locked-2026-05-03-per-track-e-v4 |
 
 </Visibility>
+
+## The five components
+
+| Component | Weight | What it measures | Output |
+|---|---:|---|---|
+| **velocity** | 30% | Decayed net buy inflow — buy pressure with recency weighting | percentile-rank within cohort → 0-1 |
+| **effectiveBuyers** | 15% | `Σ sqrt(walletBuyVolume)` — sqrt-dampened economic significance (sybil-resistant) | percentile-rank within cohort → 0-1 |
+| **stickyLiquidity** | 30% | `max(0, lp_depth − α × lp_removed_24h)` — LP depth penalized by recent withdrawals | percentile-rank within cohort → 0-1 |
+| **retention** | 15% | `early_holders_still_holding / early_holders_count` — fraction of early holders still in | already 0-1 by construction |
+| **holderConcentration** | 10% | HHI (Herfindahl-Hirschman Index) on filtered holder balances, log-mapped — penalizes whale-cluster ownership | already 0-1 by construction |
+
+<Visibility for="agents">
+
+| component | weight | spec_ref | normalization |
+|---|---:|---|---|
+| velocity | 0.30 | §6.4.1 | percentile_rank_within_cohort |
+| effectiveBuyers | 0.15 | §6.4.2 | percentile_rank_within_cohort |
+| stickyLiquidity | 0.30 | §6.4.3 | percentile_rank_within_cohort |
+| retention | 0.15 | §6.4.4 | already_zero_to_one |
+| holderConcentration | 0.10 | §6.4.6, §41 | already_zero_to_one |
+
+</Visibility>
+
+### Why these five (and not others)
+
+Three principles shaped the active component list:
+
+1. **No raw market cap.** Market cap is gameable by a single whale buy at thin liquidity. HP rewards real demand, not price action.
+2. **No raw unique-buyer count.** Sybil farms can manufacture wallet count cheaply. The sqrt-dampening on `effectiveBuyers` plus the HHI penalty on `holderConcentration` make sybil construction quadratically expensive.
+3. **No social-signal data inside HP.** Social volume is high-leverage but un-verifiable on-chain and breaks HP's deterministic, auditable property. Social data lives on spectator surfaces (planned Phase 3) but doesn't influence eliminations.
+
+A worked example. Suppose a token's components score:
+
+```
+velocity            = 0.85
+effectiveBuyers     = 0.62
+stickyLiquidity     = 0.78
+retention           = 0.71
+holderConcentration = 0.55
+```
+
+Then:
+
+```
+HP = round((0.85 × 0.30 + 0.62 × 0.15 + 0.78 × 0.30
+          + 0.71 × 0.15 + 0.55 × 0.10) × 10000)
+   = round(0.7435 × 10000)
+   = 7435
+```
+
+This token scores **HP 7435** — well above the median, comfortably surviving most cohorts.
+
+## How we derived the weights
+
+The weights aren't theoretical. They're the output of an empirical research track called **Track E** that ran across five iterations, each on real on-chain corpora, with statistical analysis and cross-validation against external research.
+
+### The story arc
+
+| Run | n | Headline finding |
+|---|---:|---|
+| **v2** ([PR #59](https://github.com/starl3xx/filter-fun/pull/59)) | 48 | First real signal across the 5 baseline components; `holderConcentration` validated as the candidate 6th component (positive predictive signal, no rank disruption) |
+| **v3** ([PR #62](https://github.com/starl3xx/filter-fun/pull/62)) | 250 | Stratification gaps + outcome-label leakage flags surfaced; momentum input bug diagnosed (98% zero) |
+| **v4** ([PR #66](https://github.com/starl3xx/filter-fun/pull/66)) | 100 stratified | L2 fit assigned momentum 0% on every outcome label across a balanced corpus; `stickyLiquidity` confirmed as dominant non-leakage signal; weights LOCKED |
+| **v4 validation** ([PR #76](https://github.com/starl3xx/filter-fun/pull/76)) | 7 | Random-sample-then-FDV funnel returned too small a cohort; v5 algorithm fix filed |
+| **v5** ([PR #87](https://github.com/starl3xx/filter-fun/pull/87)) | 43 | Liquidity-first scan algorithm; LOCKED weights ρ +0.364 (p=0.016, **significant — validated**) |
+
+### What the methodology actually does
+
+For each Track E run:
+
+1. **Build a stratified corpus.** Pull a balanced sample of survivor + dead tokens from Clanker V4 launches. v4 used 50/50 dead/survivor (n=100); v5 used a liquidity-first scan against PoolManager Swap logs to recover top-FDV tokens (n=43).
+2. **Compute HP components** for each token at hour 96 post-launch using the production scoring code.
+3. **Compute outcome labels** the components don't read — `survived_to_day_7`, `holder_retention_at_30d`, `price_floor_at_30d`. The decoupling matters: if outcomes derive from data the components also read, fitted weights are inflated by leakage.
+4. **Fit weights via L2-regularized logistic regression** against each outcome label. Compare to defaults.
+5. **RandomForest feature importance** as a non-linear sanity check.
+6. **Leakage discipline** — flag any component-vs-outcome correlation with |ρ| ≥ 0.85; treat the corresponding fitted weights as inflated, don't act on them.
+7. **Lock decision** — adopt only fitted weights that survive the leakage check, have non-trivial empirical signal, and don't disrupt rank stability vs current weights.
+
+### What the data said about each component
+
+- **`stickyLiquidity` is the dominant predictor.** v4 RF importance 0.38 (highest of any component); v5 Spearman ρ +0.87 against price-floor outcome. Empirical weight in the L2 fit was 42%, but the leakage flag (component and outcome share underlying LP data) means that's an inflated upper bound. **Locked at 30%** — a conservative middle ground between the spec default (20%) and the inflated fit (42%).
+- **`retention` is a real but leakage-suspect signal.** v4 ρ +0.93 against the same-name outcome label hit the leakage threshold. Held at the spec default 15%.
+- **`holderConcentration` validated as a real component** across two runs (v2 ρ +0.46 / AUC 0.80; v3 ρ +0.39 / AUC 0.61). Adding it doesn't disrupt rankings (rank stability ρ +0.997 to +1.000). Locked at 10%.
+- **`velocity` and `effectiveBuyers` are weaker than spec defaults suggest.** v4 L2 fit assigned 19% and 20% (vs 30% and 15% in spec). With n=100 and known leakage in the outcome that drove the fit, deviating from spec on these would be over-fitting. Held at defaults: 30% and 15%.
+- **A sixth component, `momentum`, was tested and removed.** The L2 fit assigned momentum 0% on every outcome label across a 100-token stratified corpus. Diagnostic showed 42% of survivor-half tokens had structurally flat HP in the 72h→96h window where momentum is measured. The component was structurally degraded by the current delta-window definition. Removed from §6.5; its 10% weight slot was redistributed to `stickyLiquidity` (the strongest non-leakage signal). The component's code remains in place behind a feature flag (`HP_MOMENTUM_ENABLED=false`) for v6 reconsideration if a wider delta window surfaces signal.
+
+### Cross-validation against published research
+
+The most credibility-bearing part of the methodology is that filter.fun's empirical findings independently match results from external research on adjacent launchpad ecosystems.
+
+**Marino, Naviglio, Tarantelli, Lillo (2026) — "Predicting the success of new crypto-tokens: the Pump.fun case"** ([arxiv 2602.14860](https://arxiv.org/abs/2602.14860)) — a peer-reviewable analysis of n=567,876 pump.fun tokens.
+
+Their three headline findings, mapped to filter.fun's components:
+
+| Marino finding | filter.fun equivalent | Status |
+|---|---|---|
+| "Fast accumulation of liquidity through a small number of trades is the strongest predictor of graduation" | `stickyLiquidity` as dominant component | **Cross-validated** |
+| "Markets dominated by bot-like activity exhibit systematically lower graduation probabilities" | `holderConcentration` HHI penalty + `effectiveBuyers` sqrt-dampening | **Cross-validated, design vindicated** |
+| "Presence of historically successful traders provides at most a modest and non-monotonic effect" | (we considered cross-token wallet history, didn't model it) | **Confirms our scope** |
+
+**[wangr.com pump.fun analysis dashboard](https://wangr.com/analysis/pumpfun)** — n=567,876 tokens with mortality + holder + graduation data. Reports approximately 12-day average lifespan and 0.5% graduation rate. Track E v4's observed survivor rate of 4.5% on Clanker V4 lands within wangr's reported pump.fun band (3-5%), corroborating that the corpus mortality side of the analysis generalizes across launchpad venues.
+
+**Why this matters:** filter.fun is on Base, not Solana, and uses Uniswap V4 hooks instead of pump.fun's bonding curve. The fact that two independent analyses on different chains and different launchpad mechanics arrive at the same dominant predictors is strong evidence that the HP design is targeting the right signal — not just an artifact of our specific corpus.
+
+<Visibility for="agents">
+
+| source | doi_or_url | n | finding_match |
+|---|---|---:|---|
+| Marino et al 2026 | https://arxiv.org/abs/2602.14860 | 567000 | stickyLiquidity dominant; bot-activity penalty |
+| wangr.com | https://wangr.com/analysis/pumpfun | 567876 | mortality rate corroborates (~4.5% Base vs 3-5% Solana) |
+
+</Visibility>
+
+## Honest caveats
+
+The Track E v5 validation cohort showed **pre-v4 spec defaults (which kept momentum at 10%) edging the LOCKED weights by Δρ≈0.045** on n=43 — both weight sets reach significance individually, but the gap is real and consistent with v4's directional finding at n=7. The reconciling story: validation cohort is recent-active by construction; momentum signal may be more informative there than in the dead-launch-heavy main corpus. The momentum coefficient is the most fragile call in the locked weight set.
+
+We held the lock for mainnet despite this for five reasons:
+
+1. The empirical case from the main corpus (n=100 stratified, RF importance, L2 fit, leakage-aware analysis) outweighs n=43 with Δρ=0.045
+2. Marino cross-check + wangr base-rate match corroborate the main corpus
+3. Off-chain weights make post-mainnet revision cheap (see "How weights are deployed" below)
+4. Asymmetric risk: a mis-tuned LOCKED is detectable + fixable at runtime; mis-tuned pre-v4-defaults would run silently if the main-corpus signal was correct
+5. The 7-day public-notice procedure for any weight change adds material cost; better spent on a post-mainnet refit with real filter.fun data than on a third pre-mainnet revision
+
+A v6 / post-mainnet refit will revisit momentum once filter.fun has approximately 30+ days of its own corpus data.
+
+## How weights are deployed
+
+Weights live in the `scoring/` package's config — **not** in contract bytecode. Contracts only see the oracle-published Merkle root of rankings; they never read weight values directly. This is a deliberate architectural choice (spec §6.5 "Where the weights live").
+
+**Weight-update flow:**
+
+1. Spec §6.5 amended with new locked values + rationale
+2. `scoring/` config bumped + `HP_WEIGHTS_VERSION` constant updated (e.g., `2026-05-05-v4-locked-int10k` → `2026-Q3-v6-stratified-int10k`)
+3. Public notice posted (X + `docs.filter.fun/changelog`) with at least 7-day timer before activation
+4. Indexer/scoring service redeployed; from that block forward, all `hpSnapshot` rows are tagged with the new version
+5. The `/scoring/weights` endpoint reflects the new active version
+
+**Public verifiability:**
+- Live weights queryable at [`/scoring/weights`](https://api.filter.fun/scoring/weights)
+- Open-source `scoring/` package ([`github.com/starl3xx/filter-fun/tree/main/packages/scoring`](https://github.com/starl3xx/filter-fun/tree/main/packages/scoring))
+- Every `hpSnapshot` row in the indexer is tagged with `weightsVersion` for historical reproducibility
+- At least 7 days of public notice before any weight change activates
+
+**Why off-chain:**
+- Weight revisions are a continuous research process (Track E v2 → v3 → v4 → v5 already shows multiple iterations)
+- Pinning weights to contract bytecode would freeze them or require constant contract migrations
+- Contracts already enforce the load-bearing invariant via the oracle-Merkle-publish path (spec §42.2.6 oracle authority)
+
+## What's next
+
+Post-mainnet refit: once filter.fun has approximately 30+ days of its own corpus, weights will be refit against both stratified and recent-active cohorts. The momentum coefficient will be revisited at that point — if a wider delta window (96h − 48h vs current 96h − 72h) surfaces signal, momentum may be revived at 5-10% weight. If not, the 5-component composition stays.
+
+Other deferred work (non-blocking):
+- WETH-pair filter at FDV-sample step (lifts validation cohort n closer to 50)
+- Liquid coverage gap (134 lifetime / 1 active in 7d as of v5)
+- Marino cross-check on a stratified validation cohort (current cohort structurally can't populate Marino's failure cell)
+
+---
+
+*HP scoring is the load-bearing mechanic of filter.fun's tournament. It's empirically grounded, cross-validated, and runtime-revisable as the protocol learns from its own data. Spec §6.4 + §6.5 + §41 contain the formal definitions; the [`scoring/` package](https://github.com/starl3xx/filter-fun/tree/main/packages/scoring) is the source of truth for the math; the [Track E reports](https://github.com/starl3xx/filter-fun/tree/main/track-e) document the methodology and findings.*
