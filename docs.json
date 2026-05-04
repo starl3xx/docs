@@ -41,18 +41,26 @@
         ]
       },
       {
-        "group": "Protocol",
-        "pages": [
-          "protocol/hp-methodology"
-        ]
-      },
-      {
         "group": "For creators",
         "pages": [
           "creators/launch-a-token",
           "creators/admin-console",
           "creators/incentives",
           "creators/bag-lock"
+        ]
+      },
+      {
+        "group": "For holders",
+        "pages": [
+          "holders/rollover-calculator",
+          "holders/how-rollover-works",
+          "holders/hold-bonus-mechanics"
+        ]
+      },
+      {
+        "group": "Protocol",
+        "pages": [
+          "protocol/hp-methodology"
         ]
       },
       {
