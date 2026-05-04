@@ -43,12 +43,15 @@ export const RolloverCalculator = () => {
   const presetAvg = () => { setTokens(12); setAvgLp(3.0); setYourPct(10); setWinnerMcap(50000); };
   const presetViral = () => { setTokens(12); setAvgLp(8.0); setYourPct(10); setWinnerMcap(250000); };
 
-  const btn = { flex: 1, fontSize: '13px', padding: '8px 12px', background: 'transparent', border: '0.5px solid rgba(0,0,0,0.15)', borderRadius: '8px', cursor: 'pointer' };
+  const cardBg = 'rgba(127, 127, 127, 0.1)';
+  const borderC = 'rgba(127, 127, 127, 0.25)';
+  const muted = { opacity: 0.7 };
+  const btn = { flex: 1, fontSize: '13px', padding: '8px 12px', background: 'transparent', border: `0.5px solid ${borderC}`, borderRadius: '8px', cursor: 'pointer', color: 'inherit' };
   const row = { display: 'grid', gridTemplateColumns: '220px 1fr 90px', alignItems: 'center', gap: '12px' };
-  const lbl = { fontSize: '14px', color: '#5f5e5a' };
+  const lbl = { fontSize: '14px', ...muted };
   const out = { fontSize: '14px', fontWeight: 500, textAlign: 'right' };
-  const card = { background: '#f5f5f5', padding: '14px', borderRadius: '8px' };
-  const small = { background: '#f5f5f5', padding: '10px', borderRadius: '8px' };
+  const card = { background: cardBg, padding: '14px', borderRadius: '8px' };
+  const small = { background: cardBg, padding: '10px', borderRadius: '8px' };
 
   return (
     <div style={{ padding: '1rem 0', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -87,56 +90,56 @@ export const RolloverCalculator = () => {
       </div>
 
       <div style={{ marginBottom: '1rem' }}>
-        <div style={{ fontSize: '13px', color: '#5f5e5a', marginBottom: '4px' }}>Losers pot</div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', padding: '12px 16px', background: '#f5f5f5', borderRadius: '8px' }}>
+        <div style={{ fontSize: '13px', marginBottom: '4px', ...muted }}>Losers pot</div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', padding: '12px 16px', background: cardBg, borderRadius: '8px' }}>
           <span style={{ fontSize: '18px', fontWeight: 500 }}>{fmtEth(totalFilteredLp)}</span>
-          <span style={{ fontSize: '13px', color: '#5f5e5a' }}>{fmtUsd(totalFilteredLp * ethPrice)}</span>
-          <span style={{ fontSize: '12px', color: '#888780', marginLeft: 'auto' }}>After 2.5% bounty: {fmtUsd(netPot * ethPrice)}</span>
+          <span style={{ fontSize: '13px', ...muted }}>{fmtUsd(totalFilteredLp * ethPrice)}</span>
+          <span style={{ fontSize: '12px', marginLeft: 'auto', opacity: 0.55 }}>After 2.5% bounty: {fmtUsd(netPot * ethPrice)}</span>
         </div>
       </div>
 
       <div style={{ marginBottom: '1.5rem' }}>
-        <div style={{ fontSize: '13px', color: '#5f5e5a', marginBottom: '4px' }}>Pot allocation (45/25/10/10/10)</div>
+        <div style={{ fontSize: '13px', marginBottom: '4px', ...muted }}>Pot allocation (45/25/10/10/10)</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
-          <div style={small}><div style={{ fontSize: '11px', color: '#5f5e5a' }}>Rollover 45%</div><div style={{ fontSize: '14px', fontWeight: 500, marginTop: '2px' }}>{fmtEth(rollover)}</div></div>
-          <div style={small}><div style={{ fontSize: '11px', color: '#5f5e5a' }}>Hold bonus 25%</div><div style={{ fontSize: '14px', fontWeight: 500, marginTop: '2px' }}>{fmtEth(holdBonus)}</div></div>
-          <div style={small}><div style={{ fontSize: '11px', color: '#5f5e5a' }}>Mechanics 10%</div><div style={{ fontSize: '14px', fontWeight: 500, marginTop: '2px' }}>{fmtEth(mechanics)}</div></div>
-          <div style={small}><div style={{ fontSize: '11px', color: '#5f5e5a' }}>POL 10%</div><div style={{ fontSize: '14px', fontWeight: 500, marginTop: '2px' }}>{fmtEth(pol)}</div></div>
-          <div style={small}><div style={{ fontSize: '11px', color: '#5f5e5a' }}>Treasury 10%</div><div style={{ fontSize: '14px', fontWeight: 500, marginTop: '2px' }}>{fmtEth(treasury)}</div></div>
+          <div style={small}><div style={{ fontSize: '11px', ...muted }}>Rollover 45%</div><div style={{ fontSize: '14px', fontWeight: 500, marginTop: '2px' }}>{fmtEth(rollover)}</div></div>
+          <div style={small}><div style={{ fontSize: '11px', ...muted }}>Hold bonus 25%</div><div style={{ fontSize: '14px', fontWeight: 500, marginTop: '2px' }}>{fmtEth(holdBonus)}</div></div>
+          <div style={small}><div style={{ fontSize: '11px', ...muted }}>Mechanics 10%</div><div style={{ fontSize: '14px', fontWeight: 500, marginTop: '2px' }}>{fmtEth(mechanics)}</div></div>
+          <div style={small}><div style={{ fontSize: '11px', ...muted }}>POL 10%</div><div style={{ fontSize: '14px', fontWeight: 500, marginTop: '2px' }}>{fmtEth(pol)}</div></div>
+          <div style={small}><div style={{ fontSize: '11px', ...muted }}>Treasury 10%</div><div style={{ fontSize: '14px', fontWeight: 500, marginTop: '2px' }}>{fmtEth(treasury)}</div></div>
         </div>
       </div>
 
-      <div style={{ borderTop: '0.5px solid rgba(0,0,0,0.15)', paddingTop: '1.25rem' }}>
+      <div style={{ borderTop: `0.5px solid ${borderC}`, paddingTop: '1.25rem' }}>
         <div style={{ fontSize: '14px', fontWeight: 500, marginBottom: '12px' }}>Your slice as a filtered-token holder</div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-          <div style={{ background: '#fbeaf0', padding: '14px', borderRadius: '8px' }}>
-            <div style={{ fontSize: '12px', color: '#993556', marginBottom: '4px' }}>Rollover share</div>
-            <div style={{ fontSize: '22px', fontWeight: 500, color: '#4b1528' }}>{fmtEth(yourRolloverEth)}</div>
-            <div style={{ fontSize: '13px', color: '#993556', marginTop: '2px' }}>{fmtUsd(yourRolloverEth * ethPrice)}</div>
+          <div style={{ background: 'rgba(255, 58, 161, 0.13)', padding: '14px', borderRadius: '8px' }}>
+            <div style={{ fontSize: '12px', color: '#ff3aa1', marginBottom: '4px' }}>Rollover share</div>
+            <div style={{ fontSize: '22px', fontWeight: 500, color: '#ff3aa1' }}>{fmtEth(yourRolloverEth)}</div>
+            <div style={{ fontSize: '13px', color: '#ff3aa1', opacity: 0.85, marginTop: '2px' }}>{fmtUsd(yourRolloverEth * ethPrice)}</div>
           </div>
-          <div style={{ background: '#eaf3de', padding: '14px', borderRadius: '8px' }}>
-            <div style={{ fontSize: '12px', color: '#3b6d11', marginBottom: '4px' }}>+ Hold bonus (if held 14 days)</div>
-            <div style={{ fontSize: '22px', fontWeight: 500, color: '#173404' }}>{fmtEth(yourBonusEth)}</div>
-            <div style={{ fontSize: '13px', color: '#3b6d11', marginTop: '2px' }}>{fmtUsd(yourBonusEth * ethPrice)}</div>
+          <div style={{ background: 'rgba(75, 167, 50, 0.16)', padding: '14px', borderRadius: '8px' }}>
+            <div style={{ fontSize: '12px', color: '#52a832', marginBottom: '4px' }}>+ Hold bonus (if held 14 days)</div>
+            <div style={{ fontSize: '22px', fontWeight: 500, color: '#52a832' }}>{fmtEth(yourBonusEth)}</div>
+            <div style={{ fontSize: '13px', color: '#52a832', opacity: 0.85, marginTop: '2px' }}>{fmtUsd(yourBonusEth * ethPrice)}</div>
           </div>
         </div>
 
         <div style={{ ...card, marginBottom: '12px' }}>
-          <div style={{ fontSize: '12px', color: '#5f5e5a', marginBottom: '4px' }}>Estimated total payout</div>
+          <div style={{ fontSize: '12px', marginBottom: '4px', ...muted }}>Estimated total payout</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
             <span style={{ fontSize: '26px', fontWeight: 500 }}>{fmtEth(totalEth)}</span>
-            <span style={{ fontSize: '16px', color: '#5f5e5a' }}>{fmtUsd(totalUsd)}</span>
+            <span style={{ fontSize: '16px', ...muted }}>{fmtUsd(totalUsd)}</span>
           </div>
         </div>
 
         <div style={card}>
-          <div style={{ fontSize: '12px', color: '#5f5e5a', marginBottom: '6px' }}>
-            Estimated winner tokens received <span style={{ fontSize: '11px', color: '#888780' }}>(zero-slippage approximation)</span>
+          <div style={{ fontSize: '12px', marginBottom: '6px', ...muted }}>
+            Estimated winner tokens received <span style={{ fontSize: '11px', opacity: 0.55 }}>(zero-slippage approximation)</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
             <span style={{ fontSize: '18px', fontWeight: 500 }}>{fmtTokens(winnerTokens)}</span>
-            <span style={{ fontSize: '13px', color: '#5f5e5a' }}>({winnerPct.toFixed(2)}% of supply)</span>
+            <span style={{ fontSize: '13px', ...muted }}>({winnerPct.toFixed(2)}% of supply)</span>
           </div>
         </div>
       </div>
@@ -146,9 +149,7 @@ export const RolloverCalculator = () => {
 
 # Rollover calculator ▼
 
-If your token gets filtered, your position auto-rolls into the winner — pro rata. This page shows how much of the winning token to expect, in both token amounts and dollar value, across realistic week scenarios.
-
-The math is locked in spec §11 (settlement distribution) + §44 (pre-filter exit dynamics). Try the calculator below, or scroll down for the closed-form formula and three sample scenarios.
+If your token gets filtered, your position auto-rolls into the winner — pro rata. This page shows how much of the winning token to expect, in both token amounts and dollar value, across realistic week scenarios. Try the calculator below, or scroll down for the closed-form formula and three sample scenarios.
 
 ## Calculator
 
@@ -165,7 +166,7 @@ your_rollover_eth = (your_token_lp / total_filtered_lp)
                   × your_pct_of_token
 ```
 
-The settlement pipeline that produces it (spec §11):
+The settlement pipeline that produces it:
 
 1. At hour 96, the bottom 6 tokens by HP are filtered. Their LP unwinds into WETH — that's the **losers pot**.
 2. **2.5% of the losers pot** is taken as the champion bounty and sent to the winning token's creator.
@@ -191,7 +192,7 @@ All assume you hold 10% of one filtered token; ETH at $3,500.
 
 **You receive winner tokens, not ETH.** The rollover ETH market-buys the winner, then sends you tokens. So your effective payout depends on the winner's price stability over time. Winner mcap doubles → your dollar value doubles. Winner mcap halves → halves.
 
-**§44 time-weighting penalizes mid-week selling.** Your effective rollover entitlement uses `min(balance_h72, balance_h96)` — so if you sold half your position between hours 72 and 96, your rollover scales with the lower (post-sell) balance. Designed to defeat bank-run dynamics. The calculator assumes you held continuously from hour 72.
+**Time-weighting penalizes mid-week selling.** Your effective rollover entitlement uses `min(balance_h72, balance_h96)` — so if you sold half your position between hours 72 and 96, your rollover scales with the lower (post-sell) balance. Designed to defeat bank-run dynamics. The calculator assumes you held continuously from hour 72.
 
 **The biggest swing is week quality, not your holdings size.** Going from sparse to viral is a ~5× swing in payout; going from 1% to 50% holdings is "only" 50×. Both matter, but week quality matters more than most participants intuit.
 
@@ -201,13 +202,11 @@ The calculator approximates real outcomes. What it does NOT model:
 - **Slippage on the rollover buy.** A large rollover pool buying into a thin winner pool moves price; real winner-tokens-received will be lower than the zero-slippage estimate.
 - **Uneven LP distribution.** Real cohorts won't have all 12 tokens at exactly the average LP; the bottom-half (filtered) tokens will typically have less LP than the top-half (survivors).
 - **Hold bonus exact share.** Bonus is divided pro-rata among all qualifying winner-holders; the calculator assumes your bonus share is ~1/3 of the ratio you'd get if you only competed with other rollover recipients (rough but directionally honest).
-- **§44 time-weight penalties.** Calculator assumes continuous holding from h72 onwards. Real penalties apply if you sold mid-week.
+- **Time-weight penalties on mid-week selling.** Calculator assumes continuous holding from h72 onwards.
 
 ## Related
 
 - **Creator-side ROI calculator:** [filter.fun/launch](https://filter.fun/launch) (cost + earnings projection for token creators)
-- **Settlement math:** [spec §11](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#11-settlement)
-- **Pre-filter exit dynamics:** [spec §44](https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#44-pre-filter-exit-dynamics) (snapshot freeze + time-weighted rollover + loyal-holder reserve)
 - **HP scoring methodology:** [HP methodology](/protocol/hp-methodology) (how cuts are determined in the first place)
 
 <Visibility for="agents">
@@ -222,7 +221,7 @@ The calculator approximates real outcomes. What it does NOT model:
 | winner_mcap_at_settlement | 10000 | 1000000 | 50000 | USD |
 | eth_price | 1500 | 6000 | 3500 | USD |
 
-## Settlement split constants (spec §11)
+## Settlement split constants
 
 | field | value |
 |---|---|

@@ -23,7 +23,7 @@ A token at the maximum of every component scores 10000. A token at zero on every
 - Same effective resolution as 0–100 with two decimal places (10000 discrete values either way) but cleaner display and JSON
 - Aligns with "HP" as a high-score-style integer (cultural convention from games)
 
-**Tie-break rule:** in the rare event of an exact HP tie at the cut (hour 96) or settlement (hour 168), **the token launched earlier wins.** The off-chain ranking algorithm sorts primarily by HP descending, then by `launchedAt` ascending. Deterministic, on-chain-verifiable, and preserves the early-launcher reward built into the §3.2 cadence.
+**Tie-break rule:** in the rare event of an exact HP tie at the cut (hour 96) or settlement (hour 168), **the token launched earlier wins.** The off-chain ranking algorithm sorts primarily by HP descending, then by `launchedAt` ascending. Deterministic, on-chain-verifiable, and preserves the early-launcher reward built into the season cadence.
 
 <Visibility for="agents">
 
@@ -36,7 +36,6 @@ A token at the maximum of every component scores 10000. A token at zero on every
 | `tie_break_secondary` | launchedAt ASC |
 | `weights_version` | 2026-05-05-v4-locked-int10k |
 | `weights_endpoint` | https://api.filter.fun/scoring/weights |
-| `spec_ref` | https://github.com/starl3xx/filter-fun/blob/main/filter_fun_comprehensive_spec.md#65-hp-component-weights-locked-2026-05-03-per-track-e-v4 |
 
 </Visibility>
 
@@ -52,13 +51,13 @@ A token at the maximum of every component scores 10000. A token at zero on every
 
 <Visibility for="agents">
 
-| component | weight | spec_ref | normalization |
-|---|---:|---|---|
-| velocity | 0.30 | §6.4.1 | percentile_rank_within_cohort |
-| effectiveBuyers | 0.15 | §6.4.2 | percentile_rank_within_cohort |
-| stickyLiquidity | 0.30 | §6.4.3 | percentile_rank_within_cohort |
-| retention | 0.15 | §6.4.4 | already_zero_to_one |
-| holderConcentration | 0.10 | §6.4.6, §41 | already_zero_to_one |
+| component | weight | normalization |
+|---|---:|---|
+| velocity | 0.30 | percentile_rank_within_cohort |
+| effectiveBuyers | 0.15 | percentile_rank_within_cohort |
+| stickyLiquidity | 0.30 | percentile_rank_within_cohort |
+| retention | 0.15 | already_zero_to_one |
+| holderConcentration | 0.10 | already_zero_to_one |
 
 </Visibility>
 
@@ -99,11 +98,11 @@ The weights aren't theoretical. They're the output of an empirical research trac
 
 | Run | n | Headline finding |
 |---|---:|---|
-| **v2** ([PR #59](https://github.com/starl3xx/filter-fun/pull/59)) | 48 | First real signal across the 5 baseline components; `holderConcentration` validated as the candidate 6th component (positive predictive signal, no rank disruption) |
-| **v3** ([PR #62](https://github.com/starl3xx/filter-fun/pull/62)) | 250 | Stratification gaps + outcome-label leakage flags surfaced; momentum input bug diagnosed (98% zero) |
-| **v4** ([PR #66](https://github.com/starl3xx/filter-fun/pull/66)) | 100 stratified | L2 fit assigned momentum 0% on every outcome label across a balanced corpus; `stickyLiquidity` confirmed as dominant non-leakage signal; weights LOCKED |
-| **v4 validation** ([PR #76](https://github.com/starl3xx/filter-fun/pull/76)) | 7 | Random-sample-then-FDV funnel returned too small a cohort; v5 algorithm fix filed |
-| **v5** ([PR #87](https://github.com/starl3xx/filter-fun/pull/87)) | 43 | Liquidity-first scan algorithm; LOCKED weights ρ +0.364 (p=0.016, **significant — validated**) |
+| **v2** | 48 | First real signal across the 5 baseline components; `holderConcentration` validated as the candidate 6th component (positive predictive signal, no rank disruption) |
+| **v3** | 250 | Stratification gaps + outcome-label leakage flags surfaced; momentum input bug diagnosed (98% zero) |
+| **v4** | 100 stratified | L2 fit assigned momentum 0% on every outcome label across a balanced corpus; `stickyLiquidity` confirmed as dominant non-leakage signal; weights LOCKED |
+| **v4 validation** | 7 | Random-sample-then-FDV funnel returned too small a cohort; v5 algorithm fix filed |
+| **v5** | 43 | Liquidity-first scan algorithm; LOCKED weights ρ +0.364 (p=0.016, **significant — validated**) |
 
 ### What the methodology actually does
 
@@ -119,11 +118,11 @@ For each Track E run:
 
 ### What the data said about each component
 
-- **`stickyLiquidity` is the dominant predictor.** v4 RF importance 0.38 (highest of any component); v5 Spearman ρ +0.87 against price-floor outcome. Empirical weight in the L2 fit was 42%, but the leakage flag (component and outcome share underlying LP data) means that's an inflated upper bound. **Locked at 30%** — a conservative middle ground between the spec default (20%) and the inflated fit (42%).
-- **`retention` is a real but leakage-suspect signal.** v4 ρ +0.93 against the same-name outcome label hit the leakage threshold. Held at the spec default 15%.
+- **`stickyLiquidity` is the dominant predictor.** v4 RF importance 0.38 (highest of any component); v5 Spearman ρ +0.87 against price-floor outcome. Empirical weight in the L2 fit was 42%, but the leakage flag (component and outcome share underlying LP data) means that's an inflated upper bound. **Locked at 30%** — a conservative middle ground between the prior default (20%) and the inflated fit (42%).
+- **`retention` is a real but leakage-suspect signal.** v4 ρ +0.93 against the same-name outcome label hit the leakage threshold. Held at the prior default 15%.
 - **`holderConcentration` validated as a real component** across two runs (v2 ρ +0.46 / AUC 0.80; v3 ρ +0.39 / AUC 0.61). Adding it doesn't disrupt rankings (rank stability ρ +0.997 to +1.000). Locked at 10%.
-- **`velocity` and `effectiveBuyers` are weaker than spec defaults suggest.** v4 L2 fit assigned 19% and 20% (vs 30% and 15% in spec). With n=100 and known leakage in the outcome that drove the fit, deviating from spec on these would be over-fitting. Held at defaults: 30% and 15%.
-- **A sixth component, `momentum`, was tested and removed.** The L2 fit assigned momentum 0% on every outcome label across a 100-token stratified corpus. Diagnostic showed 42% of survivor-half tokens had structurally flat HP in the 72h→96h window where momentum is measured. The component was structurally degraded by the current delta-window definition. Removed from §6.5; its 10% weight slot was redistributed to `stickyLiquidity` (the strongest non-leakage signal). The component's code remains in place behind a feature flag (`HP_MOMENTUM_ENABLED=false`) for v6 reconsideration if a wider delta window surfaces signal.
+- **`velocity` and `effectiveBuyers` are weaker than prior defaults suggest.** v4 L2 fit assigned 19% and 20% (vs 30% and 15% prior). With n=100 and known leakage in the outcome that drove the fit, deviating on these would be over-fitting. Held at defaults: 30% and 15%.
+- **A sixth component, `momentum`, was tested and removed.** The L2 fit assigned momentum 0% on every outcome label across a 100-token stratified corpus. Diagnostic showed 42% of survivor-half tokens had structurally flat HP in the 72h→96h window where momentum is measured. The component was structurally degraded by the current delta-window definition. Removed; its 10% weight slot was redistributed to `stickyLiquidity` (the strongest non-leakage signal). The component's code remains in place behind a feature flag (`HP_MOMENTUM_ENABLED=false`) for v6 reconsideration if a wider delta window surfaces signal.
 
 ### Cross-validation against published research
 
@@ -154,7 +153,7 @@ Their three headline findings, mapped to filter.fun's components:
 
 ## Honest caveats
 
-The Track E v5 validation cohort showed **pre-v4 spec defaults (which kept momentum at 10%) edging the LOCKED weights by Δρ≈0.045** on n=43 — both weight sets reach significance individually, but the gap is real and consistent with v4's directional finding at n=7. The reconciling story: validation cohort is recent-active by construction; momentum signal may be more informative there than in the dead-launch-heavy main corpus. The momentum coefficient is the most fragile call in the locked weight set.
+The Track E v5 validation cohort showed **pre-v4 defaults (which kept momentum at 10%) edging the LOCKED weights by Δρ≈0.045** on n=43 — both weight sets reach significance individually, but the gap is real and consistent with v4's directional finding at n=7. The reconciling story: validation cohort is recent-active by construction; momentum signal may be more informative there than in the dead-launch-heavy main corpus. The momentum coefficient is the most fragile call in the locked weight set.
 
 We held the lock for mainnet despite this for five reasons:
 
@@ -168,26 +167,25 @@ A v6 / post-mainnet refit will revisit momentum once filter.fun has approximatel
 
 ## How weights are deployed
 
-Weights live in the `scoring/` package's config — **not** in contract bytecode. Contracts only see the oracle-published Merkle root of rankings; they never read weight values directly. This is a deliberate architectural choice (spec §6.5 "Where the weights live").
+Weights live in scoring-engine config — **not** in contract bytecode. Contracts only see the oracle-published Merkle root of rankings; they never read weight values directly. This is a deliberate architectural choice: the load-bearing on-chain invariant is the oracle/Merkle path, while weights remain tunable post-deploy without a contract migration.
 
 **Weight-update flow:**
 
-1. Spec §6.5 amended with new locked values + rationale
-2. `scoring/` config bumped + `HP_WEIGHTS_VERSION` constant updated (e.g., `2026-05-05-v4-locked-int10k` → `2026-Q3-v6-stratified-int10k`)
+1. New locked values + rationale published (changelog entry)
+2. `HP_WEIGHTS_VERSION` constant updated (e.g., `2026-05-05-v4-locked-int10k` → `2026-Q3-v6-stratified-int10k`)
 3. Public notice posted (X + `docs.filter.fun/changelog`) with at least 7-day timer before activation
 4. Indexer/scoring service redeployed; from that block forward, all `hpSnapshot` rows are tagged with the new version
 5. The `/scoring/weights` endpoint reflects the new active version
 
 **Public verifiability:**
 - Live weights queryable at [`/scoring/weights`](https://api.filter.fun/scoring/weights)
-- Open-source `scoring/` package ([`github.com/starl3xx/filter-fun/tree/main/packages/scoring`](https://github.com/starl3xx/filter-fun/tree/main/packages/scoring))
 - Every `hpSnapshot` row in the indexer is tagged with `weightsVersion` for historical reproducibility
 - At least 7 days of public notice before any weight change activates
 
 **Why off-chain:**
 - Weight revisions are a continuous research process (Track E v2 → v3 → v4 → v5 already shows multiple iterations)
 - Pinning weights to contract bytecode would freeze them or require constant contract migrations
-- Contracts already enforce the load-bearing invariant via the oracle-Merkle-publish path (spec §42.2.6 oracle authority)
+- Contracts already enforce the load-bearing invariant via the oracle/Merkle-publish path
 
 ## What's next
 
@@ -200,4 +198,4 @@ Other deferred work (non-blocking):
 
 ---
 
-*HP scoring is the load-bearing mechanic of filter.fun's tournament. It's empirically grounded, cross-validated, and runtime-revisable as the protocol learns from its own data. Spec §6.4 + §6.5 + §41 contain the formal definitions; the [`scoring/` package](https://github.com/starl3xx/filter-fun/tree/main/packages/scoring) is the source of truth for the math; the [Track E reports](https://github.com/starl3xx/filter-fun/tree/main/track-e) document the methodology and findings.*
+*HP scoring is the load-bearing mechanic of filter.fun's tournament. It's empirically grounded, cross-validated, and runtime-revisable as the protocol learns from its own data.*
