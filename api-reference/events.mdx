@@ -1,10 +1,167 @@
 ---
 title: "GET /events (SSE)"
-description: "Live ticker event stream with priority pipeline"
+description: "Live event stream with priority pipeline, dedupe, and per-token throttle"
 ---
 
-<Note>
-  Coming soon. The endpoint will stream HP updates, filter events,
-  and rank changes over Server-Sent Events with a priority pipeline
-  that preserves high-priority events under backpressure.
-</Note>
+<Visibility for="humans">
+
+```
+GET https://api.filter.fun/events
+Accept: text/event-stream
+```
+
+Server-Sent Events stream of every state change in the active season —
+HP updates, swaps, reservations, the cut, settlement. Used by the Arena
+ticker, the leaderboard, and any external integration that needs a live
+feed without polling.
+
+## Event types
+
+Each row is one SSE `event:` name.
+
+| Event | Priority | Fires on |
+|---|---|---|
+| `HP_UPDATED` | LOW | A token's HP changed (per scoring tick or per-event recompute) |
+| `HP_REORG` | MED | Rank order changed (any token swapped positions) |
+| `RESERVATION_CREATED` | MED | A creator reserved a slot during the launch window |
+| `SEASON_ACTIVATED` | HIGH | The 4th reservation landed; tokens deploy together |
+| `TOKEN_LAUNCHED` | MED | A reserved token deployed (post-activation, slots 5–12) |
+| `SWAP_HIGH` | HIGH | Swap above the high-volume threshold |
+| `SWAP_MED` | MED | Swap above the medium threshold |
+| `SWAP_LOW` | LOW | Routine swap |
+| `FILTER_MOMENT` | HIGH | Token crossed the cut line (in/out of safe) within the final 4 hours pre-cut |
+| `WINNER_DECLARED` | HIGH | Settlement complete; winner's address published |
+| `SEASON_ABORTED` | HIGH | Launch window closed with < 4 reservations; refunds initiated |
+
+## Priority pipeline
+
+Events flow through a bounded queue with three lanes. Under backpressure,
+LOW-priority events are dropped first and HIGH events always make it
+through. Inside each lane:
+
+- **Per-token throttle** — at most 1 event per token per 250ms. Burst swaps
+  on the same token are coalesced; the most recent one wins.
+- **Dedupe** — identical event payloads within a 1s window collapse to one.
+- **LOW suppression** — when MED or HIGH events queue, LOW events are
+  dropped until the higher lanes drain.
+
+The point: a viral swap storm on one token can't bury the cut event from
+firing on schedule. HIGH-priority delivery is preserved even under load.
+
+## Connection management
+
+| Behavior | Detail |
+|---|---|
+| Reconnect | Auto-reconnect with exponential backoff (cap 30s) |
+| Resume | `Last-Event-ID` header on reconnect resumes from the last delivered event |
+| Per-IP cap | 4 concurrent connections per IP; 5th is rejected with 429 |
+| Heartbeat | `:keepalive` comment every 15s |
+| Idle timeout | 5 minutes with no events → server closes; client reconnects |
+
+## JS subscription example
+
+```js
+const events = new EventSource('https://api.filter.fun/events');
+
+events.addEventListener('HP_REORG', (e) => {
+  const payload = JSON.parse(e.data);
+  console.log('rank changed:', payload);
+});
+
+events.addEventListener('FILTER_MOMENT', (e) => {
+  const payload = JSON.parse(e.data);
+  // payload.tokenAddress, payload.fromStatus, payload.toStatus, payload.hp
+  ringTheBell(payload);
+});
+
+events.addEventListener('WINNER_DECLARED', (e) => {
+  const payload = JSON.parse(e.data);
+  // payload.winnerAddress, payload.seasonId, payload.settledAt
+  showWinnerScreen(payload);
+});
+
+events.onerror = () => {
+  // EventSource handles reconnect automatically.
+  // To force resume from a specific event, set the `lastEventId` property
+  // on a fresh EventSource (browsers send Last-Event-ID automatically).
+};
+```
+
+## Event payload shape
+
+Every event is JSON in the SSE `data:` field with this base envelope:
+
+```json
+{
+  "type": "HP_REORG",
+  "seasonId": 1,
+  "asOfBlock": 18429733,
+  "asOfTime": "2026-05-07T13:14:22Z",
+  "data": { /* per-event-type body */ }
+}
+```
+
+Type-specific bodies for the most-used events:
+
+```json
+// HP_UPDATED
+{ "tokenAddress": "0xa1b2…", "hp": 7435, "rank": 1, "prevHp": 7402, "prevRank": 1 }
+
+// HP_REORG
+{ "swaps": [{ "tokenAddress": "0xa1b2…", "fromRank": 2, "toRank": 1 },
+             { "tokenAddress": "0xc3d4…", "fromRank": 1, "toRank": 2 }] }
+
+// FILTER_MOMENT
+{ "tokenAddress": "0xa1b2…", "hp": 4811, "fromStatus": "safe", "toStatus": "at-risk", "minutesToCut": 47 }
+
+// WINNER_DECLARED
+{ "winnerAddress": "0xa1b2…", "seasonId": 1, "settledAt": "2026-05-11T00:00:12Z", "filterFundWei": "12500000000000000000" }
+```
+
+</Visibility>
+
+<Visibility for="agents">
+
+## /events — machine-readable
+
+| Field | Value |
+|---|---|
+| method | GET |
+| host | api.filter.fun |
+| path | /events |
+| transport | text/event-stream (SSE) |
+| auth | none |
+| per_ip_concurrent_cap | 4 |
+| heartbeat_interval_sec | 15 |
+| idle_timeout_sec | 300 |
+| reconnect_strategy | client-side exponential backoff (cap 30s) |
+| resume_header | Last-Event-ID |
+| per_token_throttle_ms | 250 |
+| dedupe_window_ms | 1000 |
+| low_suppression_under_higher_lanes | true |
+
+### Event taxonomy
+
+| Event | Priority |
+|---|---|
+| HP_UPDATED | LOW |
+| HP_REORG | MED |
+| RESERVATION_CREATED | MED |
+| SEASON_ACTIVATED | HIGH |
+| TOKEN_LAUNCHED | MED |
+| SWAP_HIGH | HIGH |
+| SWAP_MED | MED |
+| SWAP_LOW | LOW |
+| FILTER_MOMENT | HIGH |
+| WINNER_DECLARED | HIGH |
+| SEASON_ABORTED | HIGH |
+
+### Drop policy under backpressure
+
+| Lane | Drop order |
+|---|---|
+| LOW | dropped first when MED or HIGH lanes are non-empty |
+| MED | dropped only when HIGH lane saturates |
+| HIGH | never dropped; queue blocks producer instead |
+
+</Visibility>

@@ -1,10 +1,198 @@
 ---
 title: "GET /tokens"
-description: "Leaderboard with HP, rank, components, status"
+description: "Live leaderboard with HP, components, and per-token detail + creator-earnings"
 ---
 
-<Note>
-  Coming soon. The endpoint will return the live leaderboard — every
-  token in the active season with its HP, rank, per-component
-  breakdown, and status.
-</Note>
+<Visibility for="humans">
+
+Three related endpoints, scoped by URL:
+
+| Endpoint | Returns |
+|---|---|
+| `GET /tokens` | Full leaderboard for the active season |
+| `GET /tokens/:address` | Detail view for one token |
+| `GET /tokens/:address/creator-earnings` | Per-token creator-fee accrual + claim state |
+
+## GET /tokens — leaderboard
+
+```
+GET https://api.filter.fun/tokens
+```
+
+Returns the active season's full token list, sorted by `rank` ascending
+(rank 1 = highest HP).
+
+```json
+{
+  "seasonId": 1,
+  "tokens": [
+    {
+      "address": "0xa1b2…",
+      "symbol": "TOKA",
+      "name": "Token A",
+      "rank": 1,
+      "hp": 7435,
+      "status": "safe",
+      "priceWei": "1234567890000000",
+      "volume24hWei": "5000000000000000000",
+      "liquidityWei": "8500000000000000000",
+      "holderCount": 412,
+      "components": {
+        "velocity":            { "score": 0.85, "weight": 0.30, "label": "Buy pressure",       "cohortPercentile": 92 },
+        "effectiveBuyers":     { "score": 0.62, "weight": 0.15, "label": "Real buyers",        "cohortPercentile": 71 },
+        "stickyLiquidity":     { "score": 0.78, "weight": 0.30, "label": "Sticky liquidity",   "cohortPercentile": 88 },
+        "retention":           { "score": 0.71, "weight": 0.15, "label": "Holder retention",   "cohortPercentile": 64 },
+        "holderConcentration": { "score": 0.55, "weight": 0.10, "label": "Holder distribution","cohortPercentile": 49 }
+      },
+      "dataAvailability": { "complete": true }
+    }
+  ],
+  "weightsVersion": "2026-05-04-v4-locked-int10k-formulas",
+  "asOfBlock": 18429733,
+  "asOfTime": "2026-05-07T13:14:22Z",
+  "status": "ok"
+}
+```
+
+### `status` (token-level)
+
+| Value | Meaning |
+|---|---|
+| `safe` | currently above the cut line |
+| `at-risk` | within 3 ranks of the cut line |
+| `finalist` | post-cut, top 6 |
+| `filtered` | post-cut, bottom 6 |
+| `winner` | post-settlement winner |
+| `inactive` | pre-activation reservation only |
+
+### Components — `score` vs `cohortPercentile`
+
+Two adjacent numbers per component, used for different things:
+
+- **`score`** is the **scoring input**: a 0–1 value that's multiplied by `weight` to compute HP. This is what determines who survives. It uses fixed-reference normalization for velocity / effectiveBuyers / stickyLiquidity — same input always produces the same score regardless of cohort.
+- **`cohortPercentile`** is the **display value**: where this token's score falls on a 0–100 percentile scale within the active cohort. Used for the per-component bar visualizations on the Arena page. Not a scoring input — purely cosmetic.
+
+### Component labels (UI ↔ field name)
+
+| Field name | UI label |
+|---|---|
+| `velocity` | Buy pressure |
+| `effectiveBuyers` | Real buyers |
+| `stickyLiquidity` | Sticky liquidity |
+| `retention` | Holder retention |
+| `holderConcentration` | Holder distribution |
+| `momentum` (gated off) | Momentum |
+
+Use `label` from the response — it's the canonical UI text and is the safe target for changes.
+
+### `dataAvailability`
+
+```json
+"dataAvailability": {
+  "complete": false,
+  "missing": ["holders"],
+  "lastFullSnapshotAt": "2026-05-07T12:55:00Z"
+}
+```
+
+Flagged when one or more component inputs is stale or unavailable. Clients
+that show component bars should grey out missing components rather than
+displaying zero (which would be misleading).
+
+## GET /tokens/:address — token detail
+
+```
+GET https://api.filter.fun/tokens/0xa1b2c3d4...
+```
+
+Returns the same token shape as the leaderboard entry, plus a richer
+`history` block with the per-snapshot HP series for this token across the
+active season.
+
+```bash
+curl -s https://api.filter.fun/tokens/0xa1b2... | jq '.token.hp'
+7435
+```
+
+## GET /tokens/:address/creator-earnings
+
+```
+GET https://api.filter.fun/tokens/0xa1b2c3d4.../creator-earnings
+```
+
+Per-token view of accrued creator fees + claim state. Used by the
+[creator console](/creators/admin-console) to populate the claim card.
+
+```json
+{
+  "address": "0xa1b2…",
+  "creator": "0xCccc…",
+  "recipient": "0xRrrr…",
+  "accruedWei": "240000000000000000",
+  "claimedWei": "100000000000000000",
+  "claimableWei": "140000000000000000",
+  "lastSwapAt": "2026-05-07T13:11:51Z",
+  "windowStatus": "open",
+  "weightsVersion": "2026-05-04-v4-locked-int10k-formulas"
+}
+```
+
+| Field | Notes |
+|---|---|
+| `creator` | The wallet that originally launched the token (immutable) |
+| `recipient` | Configured fee-payout address (mutable via creator console) |
+| `accruedWei` | Lifetime creator-share accrual (gross of claims) |
+| `claimedWei` | Lifetime claimed (sum of all `Claimed` events) |
+| `claimableWei` | `accruedWei - claimedWei` |
+| `windowStatus` | `open` (winner / pre-cut) · `closed` (filtered / non-winner finalist) |
+
+Creator fees are perpetual on winners. Filtered or non-winner-finalist tokens
+have `windowStatus: closed` once their LP has unwound — already-accrued
+balances stay claimable indefinitely.
+
+</Visibility>
+
+<Visibility for="agents">
+
+## /tokens — machine-readable
+
+| Field | Value |
+|---|---|
+| method | GET |
+| host | api.filter.fun |
+| paths | /tokens · /tokens/:address · /tokens/:address/creator-earnings |
+| auth | none |
+| sort | rank ascending |
+| hp_scale | 0–10000 integer |
+
+### Component field map (canonical)
+
+| Field | UI label | Weight | Score range |
+|---|---|---:|---|
+| velocity | Buy pressure | 0.30 | 0–1 |
+| effectiveBuyers | Real buyers | 0.15 | 0–1 |
+| stickyLiquidity | Sticky liquidity | 0.30 | 0–1 |
+| retention | Holder retention | 0.15 | 0–1 |
+| holderConcentration | Holder distribution | 0.10 | 0–1 |
+| momentum | Momentum | 0.00 | gated off |
+
+### `score` vs `cohortPercentile`
+
+| | score | cohortPercentile |
+|---|---|---|
+| Range | 0–1 | 0–100 |
+| Used in HP calc | yes | no |
+| Used in UI bars | no | yes |
+| Normalization | fixed-reference (velocity/effectiveBuyers/stickyLiquidity) or already 0–1 | percentile rank within active cohort |
+
+### Token status enum
+
+`safe` · `at-risk` · `finalist` · `filtered` · `winner` · `inactive`
+
+### dataAvailability
+
+When `complete: false`, the `missing` array names which component inputs are
+unavailable for this snapshot. Display logic should grey out missing
+components rather than show 0.
+
+</Visibility>

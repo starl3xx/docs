@@ -1,9 +1,152 @@
 ---
 title: "GET /profile/:address"
-description: "Per-wallet profile: created tokens, claims, badges"
+description: "Per-wallet profile: created tokens, claims, badges, lifetime stats"
 ---
 
-<Note>
-  Coming soon. The endpoint will return a wallet's launch history,
-  rollover and bonus claims, and any earned badges.
-</Note>
+<Visibility for="humans">
+
+```
+GET https://api.filter.fun/profile/0xWalletAddress
+```
+
+Returns a wallet's history across filter.fun: tokens it created, rollover
+and bonus claims it's made, badges it's earned, and lifetime trade stats.
+
+## Response shape
+
+```json
+{
+  "address": "0xWalletAddress…",
+  "createdTokens": [
+    {
+      "address": "0xa1b2…",
+      "symbol": "TOKA",
+      "seasonId": 1,
+      "outcome": "filtered",
+      "creatorRecipient": "0xRrrr…",
+      "feesAccruedWei": "100000000000000000",
+      "feesClaimedWei": "100000000000000000"
+    }
+  ],
+  "claims": {
+    "rolloverClaimsCount": 2,
+    "rolloverClaimedWei": "750000000000000000",
+    "bonusClaimsCount": 1,
+    "bonusClaimedWei": "240000000000000000",
+    "lastClaimAt": "2026-04-29T00:00:00Z"
+  },
+  "badges": [
+    { "type": "WEEK_WINNER", "seasonId": 0, "earnedAt": "2026-04-21T00:00:00Z" },
+    { "type": "FILTER_SURVIVOR", "seasonIds": [0, 1] }
+  ],
+  "stats": {
+    "filtersSurvived": 2,
+    "lifetimeTradeVolumeWei": "12500000000000000000",
+    "tokensTraded": 17
+  },
+  "asOfBlock": 18429733,
+  "asOfTime": "2026-05-07T13:14:22Z",
+  "status": "ok"
+}
+```
+
+### Fields
+
+| Field | Type | Notes |
+|---|---|---|
+| `createdTokens` | array | Tokens this wallet originally launched (one entry per token) |
+| `claims.rolloverClaimsCount` | integer | Number of rollover Merkle claims completed |
+| `claims.rolloverClaimedWei` | wei string | Lifetime rollover ETH-equivalent claimed |
+| `claims.bonusClaimsCount` | integer | Number of hold-bonus claims completed |
+| `claims.bonusClaimedWei` | wei string | Lifetime bonus claimed |
+| `badges` | array | See badge taxonomy below |
+| `stats.filtersSurvived` | integer | Tokens this wallet held that survived the cut |
+| `stats.lifetimeTradeVolumeWei` | wei string | Cumulative WETH-equivalent of all swaps signed by this wallet |
+| `stats.tokensTraded` | integer | Distinct token addresses traded |
+
+## Badge taxonomy
+
+| Badge | Trigger |
+|---|---|
+| `WEEK_WINNER` | Wallet is the creator of a winning token in any past season |
+| `FILTER_SURVIVOR` | Wallet held at least one token across the cut into the survivor set |
+| `QUARTERLY_FINALIST` | Reserved for the quarterly tournament (Phase 2) |
+| `QUARTERLY_CHAMPION` | Reserved for the quarterly tournament (Phase 2) |
+| `ANNUAL_FINALIST` | Ships dormant; populated when annual tournaments activate |
+| `ANNUAL_CHAMPION` | Ships dormant; populated when annual tournaments activate |
+
+`ANNUAL_*` and `QUARTERLY_*` badges exist in the schema and the indexer
+returns the field, but they remain unpopulated through Phase 1.
+
+Holder-derived badges (`FILTER_SURVIVOR`, future quarterly/annual standings)
+depend on the indexer's `holderSnapshot` surface. If a snapshot is stale at
+request time, the badge for in-flight holders may briefly lag the on-chain
+state.
+
+## Worked example
+
+```bash
+curl -s https://api.filter.fun/profile/0xWalletAddress | jq '{badges, stats, claims}'
+```
+
+```json
+{
+  "badges": [
+    { "type": "WEEK_WINNER", "seasonId": 0, "earnedAt": "2026-04-21T00:00:00Z" }
+  ],
+  "stats": {
+    "filtersSurvived": 2,
+    "lifetimeTradeVolumeWei": "12500000000000000000",
+    "tokensTraded": 17
+  },
+  "claims": {
+    "rolloverClaimsCount": 2,
+    "rolloverClaimedWei": "750000000000000000",
+    "bonusClaimsCount": 1,
+    "bonusClaimedWei": "240000000000000000",
+    "lastClaimAt": "2026-04-29T00:00:00Z"
+  }
+}
+```
+
+## Notes
+
+- The endpoint is permissionless — any wallet can be queried.
+- Status conventions and rate-limiting follow the same pattern as
+  [/season](/api-reference/season): `status: "ok" | "not-ready"` plus
+  `RateLimit-Remaining` / `Retry-After` headers.
+
+</Visibility>
+
+<Visibility for="agents">
+
+## /profile/:address — machine-readable
+
+| Field | Value |
+|---|---|
+| method | GET |
+| host | api.filter.fun |
+| path | /profile/:address |
+| auth | none |
+| address_format | 0x-prefixed 20-byte hex |
+
+### Badge enum
+
+| Badge | Status |
+|---|---|
+| WEEK_WINNER | active |
+| FILTER_SURVIVOR | active (holder-derived; depends on holderSnapshot) |
+| QUARTERLY_FINALIST | reserved (Phase 2) |
+| QUARTERLY_CHAMPION | reserved (Phase 2) |
+| ANNUAL_FINALIST | dormant; populated when annual tournaments activate |
+| ANNUAL_CHAMPION | dormant; populated when annual tournaments activate |
+
+### Stats interpretation
+
+| Field | Source |
+|---|---|
+| filtersSurvived | Count of distinct (token, season) pairs where this wallet held into a survivor cohort |
+| lifetimeTradeVolumeWei | Σ of WETH-equivalent on every swap whose `tx.from` matches this wallet |
+| tokensTraded | Distinct token addresses where this wallet appears in any swap |
+
+</Visibility>
